@@ -1,0 +1,3120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Patrimonio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<style>
+/* ── Reset & Base ─────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:        #09090f;
+  --bg2:       #0f0f1a;
+  --bg3:       #141424;
+  --card:      rgba(20, 20, 40, 0.7);
+  --border:    rgba(255,255,255,0.07);
+  --border2:   rgba(255,255,255,0.12);
+  --text:      #e8e8f0;
+  --muted:     #6b6b8a;
+  --accent:    #6366f1;
+  --accent2:   #818cf8;
+  --green:     #10b981;
+  --red:       #f43f5e;
+  --yellow:    #f59e0b;
+  --sidebar-w: 220px;
+  --radius:    14px;
+  --radius-sm: 8px;
+}
+html, body { height: 100%; }
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  font-size: 14px;
+  line-height: 1.5;
+}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(99,102,241,.4); border-radius: 3px; }
+
+/* ── Layout ──────────────────────────────────────────────────────────── */
+#app { display: flex; min-height: 100vh; }
+
+/* ── Sidebar ─────────────────────────────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar-w);
+  min-height: 100vh;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+  transition: transform .3s ease;
+}
+.sidebar-logo {
+  padding: 28px 20px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo .logo-mark {
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--accent), #a855f7);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 800; color: #fff;
+  box-shadow: 0 0 20px rgba(99,102,241,.4);
+}
+.logo-text { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -.3px; }
+.logo-sub  { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+.sidebar-nav { padding: 16px 12px; flex: 1; }
+.nav-label { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; padding: 0 8px 8px; }
+.nav-item {
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  cursor: pointer; color: var(--muted); font-weight: 500;
+  transition: all .18s ease; margin-bottom: 2px;
+  border: 1px solid transparent;
+}
+.nav-item:hover { background: rgba(99,102,241,.08); color: var(--text); }
+.nav-item.active {
+  background: rgba(99,102,241,.15);
+  color: var(--accent2);
+  border-color: rgba(99,102,241,.2);
+}
+.nav-icon { font-size: 17px; width: 20px; text-align: center; flex-shrink: 0; }
+.nav-text  { font-size: 13.5px; }
+
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  font-size: 11px; color: var(--muted);
+}
+
+/* ── Main Content ─────────────────────────────────────────────────────── */
+.main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+}
+.topbar {
+  padding: 24px 32px 0;
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.page-title { font-size: 24px; font-weight: 800; letter-spacing: -.5px; }
+.page-subtitle { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.topbar-right { display: flex; gap: 10px; }
+
+.content { padding: 24px 32px 40px; }
+
+/* ── Sections ─────────────────────────────────────────────────────────── */
+.section { display: none; }
+.section.active { display: block; }
+
+/* ── Cards ───────────────────────────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  overflow: hidden;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.card:hover { border-color: var(--border2); box-shadow: 0 4px 32px rgba(0,0,0,.3); }
+.card-header {
+  padding: 18px 22px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.card-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.card-body { padding: 22px; }
+
+/* ── KPI Grid ─────────────────────────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.kpi-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  backdrop-filter: blur(12px);
+  position: relative;
+  overflow: hidden;
+  transition: all .2s ease;
+  cursor: default;
+}
+.kpi-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-clr, var(--accent)), transparent);
+  opacity: .6;
+}
+.kpi-card:hover { border-color: var(--border2); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,.4); }
+.kpi-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 10px; }
+.kpi-value {
+  font-size: 28px; font-weight: 800; letter-spacing: -.8px;
+  background: linear-gradient(135deg, #fff 30%, rgba(255,255,255,.7));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: all .4s ease;
+}
+.kpi-delta {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; font-weight: 600; margin-top: 8px;
+  padding: 3px 8px; border-radius: 20px;
+}
+.kpi-delta.pos { background: rgba(16,185,129,.12); color: var(--green); }
+.kpi-delta.neg { background: rgba(244,63,94,.12); color: var(--red); }
+.kpi-delta.neu { background: rgba(107,107,138,.1); color: var(--muted); }
+
+/* ── Chart Grid ───────────────────────────────────────────────────────── */
+.chart-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.chart-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.chart-wrap { position: relative; width: 100%; }
+canvas { display: block; }
+
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px; border-radius: var(--radius-sm);
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: none; transition: all .18s ease;
+  text-decoration: none;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #7c3aed);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(99,102,241,.35);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,.45); }
+.btn-ghost {
+  background: rgba(255,255,255,.05);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { background: rgba(255,255,255,.1); border-color: var(--border2); }
+.btn-danger {
+  background: rgba(244,63,94,.12);
+  color: var(--red);
+  border: 1px solid rgba(244,63,94,.2);
+}
+.btn-danger:hover { background: rgba(244,63,94,.2); }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-icon { padding: 7px; }
+
+/* ── Table ────────────────────────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead tr { border-bottom: 1px solid var(--border2); }
+th {
+  padding: 10px 14px; text-align: left;
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .06em;
+  white-space: nowrap;
+}
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background .12s;
+}
+tbody tr:hover { background: rgba(99,102,241,.05); }
+td { padding: 12px 14px; font-size: 13px; }
+.td-actions { display: flex; gap: 6px; }
+
+/* ── Badge ────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 9px; border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+}
+.badge-pos { background: rgba(16,185,129,.12); color: var(--green); }
+.badge-neg { background: rgba(244,63,94,.12); color: var(--red); }
+.badge-neu { background: rgba(107,107,138,.1); color: var(--muted); }
+
+/* ── Modal ────────────────────────────────────────────────────────────── */
+.overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .2s ease;
+}
+.overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 28px;
+  width: 480px; max-width: 95vw;
+  transform: translateY(16px); transition: transform .2s ease;
+  box-shadow: 0 24px 64px rgba(0,0,0,.6);
+}
+.overlay.open .modal { transform: translateY(0); }
+.modal-title { font-size: 18px; font-weight: 700; margin-bottom: 22px; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+
+/* ── Form ─────────────────────────────────────────────────────────────── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1 / -1; }
+label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+input[type=text], input[type=number], input[type=date] {
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: inherit; font-size: 14px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  width: 100%;
+}
+input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,.15); }
+input::-webkit-calendar-picker-indicator { filter: invert(.6); cursor: pointer; }
+
+/* ── Objetivo section ─────────────────────────────────────────────────── */
+.objetivo-layout { display: grid; grid-template-columns: 360px 1fr; gap: 20px; align-items: start; }
+.stat-list { display: flex; flex-direction: column; gap: 10px; }
+.stat-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 11px 16px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.stat-row-label { font-size: 13px; color: var(--muted); }
+.stat-row-value { font-size: 14px; font-weight: 700; }
+.stat-row-value.pos { color: var(--green); }
+.stat-row-value.neg { color: var(--red); }
+.goal-result {
+  padding: 14px 18px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; gap: 12px;
+  font-size: 14px; font-weight: 600; margin-top: 8px;
+}
+.goal-result.yes { background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.2); color: var(--green); }
+.goal-result.no  { background: rgba(244,63,94,.1);  border: 1px solid rgba(244,63,94,.2);  color: var(--red); }
+.goal-icon { font-size: 22px; }
+
+/* ── Stats section ────────────────────────────────────────────────────── */
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+.stats-highlight {
+  padding: 20px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); text-align: center;
+}
+.stats-highlight .sh-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.stats-highlight .sh-value { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+
+/* ── Toasts ───────────────────────────────────────────────────────────── */
+#toast-container {
+  position: fixed; top: 20px; right: 20px; z-index: 999;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+  padding: 12px 18px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500;
+  animation: slideIn .2s ease;
+  max-width: 300px;
+}
+.toast.success { background: rgba(16,185,129,.15); border: 1px solid rgba(16,185,129,.3); color: var(--green); }
+.toast.error   { background: rgba(244,63,94,.15);  border: 1px solid rgba(244,63,94,.3);  color: var(--red); }
+@keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .chart-grid { grid-template-columns: 1fr; }
+  .objetivo-layout { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 700px) {
+  :root { --sidebar-w: 0px; }
+  .sidebar { transform: translateX(-220px); }
+  .sidebar.open { transform: translateX(0); width: 220px; }
+  .main { margin-left: 0; }
+  .kpi-grid { grid-template-columns: 1fr; }
+  .chart-grid-3 { grid-template-columns: 1fr; }
+  .topbar { padding: 16px; }
+  .content { padding: 16px; }
+  .menu-btn { display: flex !important; }
+}
+.menu-btn { display: none; }
+
+/* ── Divider ──────────────────────────────────────────────────────────── */
+.divider { height: 1px; background: var(--border); margin: 24px 0; }
+.mb-16 { margin-bottom: 16px; }
+.mb-24 { margin-bottom: 24px; }
+.text-right { text-align: right; }
+.text-muted { color: var(--muted); }
+.fw-700 { font-weight: 700; }
+
+/* ── Select oscuro ────────────────────────────────────────────────────────── */
+select {
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 12px;
+  outline: none;
+  width: 100%;
+  cursor: pointer;
+  color-scheme: dark;
+  transition: border-color .15s, box-shadow .15s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b6b8a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,.15); }
+select option {
+  background: #1a1a2e;
+  color: var(--text);
+  padding: 8px;
+}
+select option:checked { background: var(--accent); }
+
+/* ── Sub-tabs ─────────────────────────────────────────────────────────── */
+.subtabs {
+  display: flex; gap: 4px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  width: fit-content;
+  margin-bottom: 20px;
+}
+.subtab {
+  padding: 7px 20px; border-radius: 6px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  color: var(--muted); transition: all .15s ease; border: none;
+  background: transparent; font-family: inherit;
+}
+.subtab.active { background: var(--accent); color: #fff; box-shadow: 0 2px 10px rgba(99,102,241,.35); }
+.subtab:hover:not(.active) { color: var(--text); background: rgba(255,255,255,.06); }
+
+.subtab-panel { display: none; }
+.subtab-panel.active { display: block; }
+
+/* ── Year group header ────────────────────────────────────────────────── */
+.year-group { margin-bottom: 28px; }
+.year-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px; cursor: pointer; user-select: none;
+}
+.year-label {
+  font-size: 18px; font-weight: 800; letter-spacing: -.4px;
+  background: linear-gradient(135deg, var(--accent2), var(--green));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.year-summary {
+  display: flex; gap: 16px; align-items: center;
+  font-size: 12px; color: var(--muted);
+}
+.year-summary strong { color: var(--text); font-weight: 700; }
+.year-toggle {
+  font-size: 16px; color: var(--muted);
+  transition: transform .2s ease;
+}
+.year-group.collapsed .year-toggle { transform: rotate(-90deg); }
+.year-group.collapsed .year-body { display: none; }
+
+/* ── Ops summary row ──────────────────────────────────────────────────── */
+.ops-totals {
+  display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;
+}
+.ops-total-pill {
+  padding: 5px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.ops-total-pill span { color: var(--text); font-weight: 700; }
+.ops-total-pill.pos span { color: var(--green); }
+.ops-total-pill.neg span { color: var(--red); }
+
+/* ── Gastos section ───────────────────────────────────────────────────────── */
+.gastos-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.gastos-kpi {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  backdrop-filter: blur(12px);
+  position: relative;
+  overflow: hidden;
+  transition: all .2s ease;
+}
+.gastos-kpi::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gkpi-clr, var(--accent)), transparent);
+  opacity: .7;
+}
+.gastos-kpi:hover { border-color: var(--border2); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,.4); }
+.gastos-kpi-icon { font-size: 26px; margin-bottom: 10px; }
+.gastos-kpi-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px; }
+.gastos-kpi-value { font-size: 30px; font-weight: 800; letter-spacing: -.8px;
+  background: linear-gradient(135deg, #fff 30%, rgba(255,255,255,.7));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.gastos-kpi-value.green { background: linear-gradient(135deg, #10b981, #34d399); -webkit-background-clip: text; background-clip: text; }
+.gastos-kpi-value.red   { background: linear-gradient(135deg, #f43f5e, #fb7185); -webkit-background-clip: text; background-clip: text; }
+.gastos-kpi-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+.gastos-ingreso-edit {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 10px;
+}
+.gastos-ingreso-edit input {
+  width: 140px; padding: 6px 10px; font-size: 14px; font-weight: 700;
+}
+.gastos-ingreso-edit button { padding: 6px 14px; font-size: 12px; }
+
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+.cat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.cat-card:hover { border-color: var(--border2); box-shadow: 0 4px 24px rgba(0,0,0,.3); }
+.cat-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,.02);
+}
+.cat-card-title {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 14px; font-weight: 700;
+}
+.cat-icon {
+  width: 34px; height: 34px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px;
+  background: var(--cat-bg, rgba(99,102,241,.15));
+}
+.cat-total {
+  font-size: 14px; font-weight: 800;
+  color: var(--muted);
+}
+.cat-items { padding: 8px 0; }
+.cat-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  transition: background .12s;
+}
+.cat-item:last-child { border-bottom: none; }
+.cat-item:hover { background: rgba(255,255,255,.03); }
+.cat-item-name { font-size: 13.5px; font-weight: 500; color: var(--text); }
+.cat-item-amount { font-size: 14px; font-weight: 700; color: var(--accent2); white-space: nowrap; margin-left: 12px; }
+.cat-item-actions { display: flex; gap: 4px; margin-left: 10px; opacity: 0; transition: opacity .15s; }
+.cat-item:hover .cat-item-actions { opacity: 1; }
+.cat-empty {
+  padding: 16px 18px;
+  color: var(--muted); font-size: 13px; font-style: italic;
+}
+
+.gastos-add-row {
+  display: flex; gap: 10px; padding: 10px 18px 14px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.gastos-add-row input { flex: 1; min-width: 120px; font-size: 13px; padding: 7px 10px; }
+.gastos-add-row button { padding: 7px 16px; font-size: 13px; }
+@media (max-width: 900px) { .gastos-summary { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .gastos-summary { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Sidebar ────────────────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <div class="logo-icon">M</div>
+        <div>
+          <div class="logo-text">Mi Patrimonio</div>
+          <div class="logo-sub">Finance Dashboard</div>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Menú</div>
+      <div class="nav-item active" data-section="dashboard">
+        <span class="nav-icon">◈</span>
+        <span class="nav-text">Dashboard</span>
+      </div>
+      <div class="nav-item" data-section="snapshots">
+        <span class="nav-icon">⊞</span>
+        <span class="nav-text">Snapshots</span>
+      </div>
+      <div class="nav-item" data-section="objetivo">
+        <span class="nav-icon">◎</span>
+        <span class="nav-text">Objetivo</span>
+      </div>
+      <div class="nav-item" data-section="estadisticas">
+        <span class="nav-icon">▦</span>
+        <span class="nav-text">Estadísticas</span>
+      </div>
+      <div class="nav-item" data-section="operaciones">
+        <span class="nav-icon">⊕</span>
+        <span class="nav-text">Operaciones</span>
+      </div>
+      <div class="nav-item" data-section="backup">
+        <span class="nav-icon">☁</span>
+        <span class="nav-text">Copia de seguridad</span>
+      </div>
+      <div class="nav-item" data-section="gastos">
+        <span class="nav-icon">💳</span>
+        <span class="nav-text">Gastos</span>
+      </div>
+      <div class="nav-item" data-section="admin" id="nav-admin" style="display:none">
+        <span class="nav-icon">⚙</span>
+        <span class="nav-text">Administración</span>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div id="sidebarUser" style="margin-bottom:8px;font-size:12px;color:#9999b0"></div>
+      <button onclick="logout()" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#9999b0;font-size:12px;padding:6px;cursor:pointer">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <!-- ── Main ───────────────────────────────────────────────────────── -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <button class="btn btn-ghost btn-icon menu-btn" id="menuBtn" onclick="toggleSidebar()">☰</button>
+        <div class="page-title" id="pageTitle">Dashboard</div>
+        <div class="page-subtitle" id="pageSubtitle">Resumen de tu patrimonio</div>
+      </div>
+      <div class="topbar-right" id="topbarRight"></div>
+    </div>
+
+    <div class="content">
+
+      <!-- ── DASHBOARD ─────────────────────────────────────────────── -->
+      <div class="section active" id="sec-dashboard">
+        <div class="kpi-grid" id="kpiGrid"></div>
+        <div class="chart-grid">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Evolución del Patrimonio</span>
+            </div>
+            <div class="card-body">
+              <div class="chart-wrap" style="height:260px">
+                <canvas id="chartTotal"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Distribución Actual</span>
+            </div>
+            <div class="card-body" style="display:flex;align-items:center;justify-content:center;">
+              <div class="chart-wrap" style="height:260px;width:260px;max-width:100%">
+                <canvas id="chartDonut"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Desglose por Categoría</span>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap" style="height:240px">
+              <canvas id="chartStacked"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SNAPSHOTS ─────────────────────────────────────────────── -->
+      <div class="section" id="sec-snapshots">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Historial de Snapshots</span>
+            <button class="btn btn-primary btn-sm" onclick="openModal()">+ Añadir Snapshot</button>
+          </div>
+          <div class="card-body" style="padding:0">
+            <div class="table-wrap">
+              <table id="snapshotsTable">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Label</th>
+                    <th class="text-right">Acciones</th>
+                    <th class="text-right">Fondos</th>
+                    <th class="text-right">Ahorro</th>
+                    <th class="text-right">Total</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="snapshotsBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── OBJETIVO ───────────────────────────────────────────────── -->
+      <div class="section" id="sec-objetivo">
+        <div class="objetivo-layout">
+          <div>
+            <div class="card mb-16">
+              <div class="card-header"><span class="card-title">Configuración</span></div>
+              <div class="card-body">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label>Salario mensual neto (€)</label>
+                    <input type="number" id="cfg-salario" placeholder="0" min="0" step="100">
+                  </div>
+                  <div class="form-group">
+                    <label>Gastos mensuales (€)</label>
+                    <input type="number" id="cfg-gastos" placeholder="0" min="0" step="100">
+                  </div>
+                  <div class="form-group">
+                    <label>Objetivo de patrimonio (€)</label>
+                    <input type="number" id="cfg-objetivo" placeholder="0" min="0" step="1000">
+                  </div>
+                  <div class="form-group">
+                    <label>Fecha objetivo</label>
+                    <input type="date" id="cfg-fecha">
+                  </div>
+                </div>
+                <div style="margin-top:16px;display:flex;justify-content:flex-end;">
+                  <button class="btn btn-primary" onclick="saveConfig()">Guardar y calcular</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><span class="card-title">Resultados</span></div>
+              <div class="card-body">
+                <div class="stat-list" id="objetivoStats"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><span class="card-title">Proyección hasta el objetivo</span></div>
+            <div class="card-body">
+              <div class="chart-wrap" style="height:340px">
+                <canvas id="chartObjetivo"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── OPERACIONES ───────────────────────────────────────────── -->
+      <div class="section" id="sec-operaciones">
+        <div class="subtabs">
+          <button class="subtab active" data-subtab="acciones" onclick="switchSubtab('acciones')">Acciones</button>
+          <button class="subtab" data-subtab="dividendos" onclick="switchSubtab('dividendos')">Dividendos</button>
+          <button class="subtab" data-subtab="fondos" onclick="switchSubtab('fondos')">Fondos Indexados</button>
+        </div>
+
+        <!-- Acciones panel -->
+        <div class="subtab-panel active" id="subpanel-acciones">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div style="font-size:13px;color:var(--muted)">Historial de compra-venta de acciones agrupado por año</div>
+            <button class="btn btn-primary btn-sm" onclick="openAccionModal()">+ Añadir operación</button>
+          </div>
+          <div id="accionesGroups"></div>
+
+        </div>
+
+        <!-- Dividendos panel -->
+        <div class="subtab-panel" id="subpanel-dividendos">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div style="font-size:13px;color:var(--muted)">Dividendos cobrados agrupados por año</div>
+            <button class="btn btn-primary btn-sm" onclick="openDividendoModal()">+ Añadir dividendo</button>
+          </div>
+          <div id="dividendosGroups"></div>
+        </div>
+
+        <!-- Fondos panel -->
+        <div class="subtab-panel" id="subpanel-fondos">
+
+          <!-- KPIs fondos -->
+          <div class="kpi-grid" id="etfKpiGrid" style="margin-bottom:24px"></div>
+
+          <!-- Catálogo de fondos -->
+          <div class="card" style="margin-bottom:24px">
+            <div class="card-header">
+              <span class="card-title">Mi cartera de fondos</span>
+              <button class="btn btn-ghost btn-sm" onclick="openFondoCatalogoModal()">+ Añadir fondo</button>
+            </div>
+            <div id="fondoCatalogoList" style="padding:0"></div>
+          </div>
+
+          <!-- Ventas -->
+          <div class="card" style="margin-bottom:28px">
+            <div class="card-header">
+              <span class="card-title">Ventas realizadas</span>
+              <button class="btn btn-primary btn-sm" onclick="openEtfVentaModal()">+ Añadir venta</button>
+            </div>
+            <div id="etfVentasCards" style="padding:16px;display:flex;flex-direction:column;gap:10px"></div>
+            <div style="padding:0 16px 16px">
+              <div id="etfVentasTotals" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+            </div>
+          </div>
+
+          <!-- Compras -->
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+            <div style="position:relative;flex:1;min-width:200px;max-width:320px">
+              <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none">🔍</span>
+              <input type="text" id="etfSearchInput" placeholder="Buscar por nombre de fondo…"
+                style="padding-left:34px" oninput="renderEtfComprasGroups()">
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openEtfCompraModal()">+ Registrar compra</button>
+          </div>
+          <div id="etfComprasGroups"></div>
+
+          <!-- hidden table body kept for compat -->
+          <div style="display:none"><tbody id="etfVentasBody"></tbody></div>
+        </div>
+      </div>
+
+      <!-- ── ESTAD�STICAS ───────────────────────────────────────────── -->
+      <div class="section" id="sec-estadisticas">
+        <div class="stats-grid" id="statsHighlights"></div>
+        <div class="chart-grid-3 mb-24">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Rendimiento mensual (%)</span></div>
+            <div class="card-body">
+              <div class="chart-wrap" style="height:240px">
+                <canvas id="chartRendimiento"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Variación acumulada (%)</span></div>
+            <div class="card-body">
+              <div class="chart-wrap" style="height:240px">
+                <canvas id="chartAcumulado"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Tabla de Deltas</span></div>
+          <div class="card-body" style="padding:0">
+            <div class="table-wrap">
+              <table id="deltaTable">
+                <thead>
+                  <tr>
+                    <th>Período</th>
+                    <th class="text-right">Δ Acciones</th>
+                    <th class="text-right">Δ Fondos</th>
+                    <th class="text-right">Δ Ahorro</th>
+                    <th class="text-right">Δ Total</th>
+                    <th class="text-right">% Total</th>
+                  </tr>
+                </thead>
+                <tbody id="deltaBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── BACKUP ──────────────────────────────────────────────────── -->
+      <div class="section" id="sec-backup">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+
+          <!-- Copia local -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">💾 Copia local</span>
+            </div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:16px">
+              <p style="font-size:13px;color:var(--muted);line-height:1.6">
+                Descarga el archivo <code style="background:rgba(255,255,255,.06);padding:2px 6px;border-radius:4px;font-size:12px">patrimonio.db</code> a tu equipo.
+                Guárdalo en un lugar seguro (nube, disco externo…).
+              </p>
+              <a href="/api/backup/download" class="btn btn-primary" style="text-align:center">
+                ⬇ Descargar backup
+              </a>
+              <div style="border-top:1px solid var(--border);padding-top:16px">
+                <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Restaurar desde archivo</div>
+                <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5">
+                  ⚠️ Esto reemplazará <strong>todos</strong> los datos actuales con los del archivo seleccionado.
+                </p>
+                <div style="display:flex;gap:10px;align-items:center">
+                  <input type="file" id="restoreFile" accept=".db" style="font-size:12px;color:var(--muted);flex:1">
+                  <button class="btn btn-danger btn-sm" onclick="restoreBackup()">Restaurar</button>
+                </div>
+                <div id="restoreMsg" style="margin-top:8px;font-size:12px"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Google Drive -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">☁ Google Drive</span>
+              <div id="driveStatusBadge"></div>
+            </div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:16px">
+
+              <!-- Setup credentials -->
+              <div id="driveSetupSection">
+                <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Credenciales OAuth2</div>
+                <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">
+                  Necesitas crear un proyecto en <a href="https://console.cloud.google.com" target="_blank" style="color:var(--accent2)">Google Cloud Console</a>,
+                  activar la API de Drive y crear credenciales OAuth2 con URI de redirección
+                  <code style="background:rgba(255,255,255,.06);padding:2px 5px;border-radius:4px;font-size:11px">http://localhost:3000/api/drive/callback</code>.
+                </p>
+                <div class="form-grid">
+                  <div class="form-group full">
+                    <label>Client ID</label>
+                    <input type="text" id="driveClientId" placeholder="xxxx.apps.googleusercontent.com">
+                  </div>
+                  <div class="form-group full">
+                    <label>Client Secret</label>
+                    <input type="password" id="driveClientSecret" placeholder="GOCSPX-…">
+                  </div>
+                </div>
+                <button class="btn btn-ghost" style="width:100%;margin-top:4px" onclick="saveDriveCredentials()">Guardar credenciales</button>
+              </div>
+
+              <!-- Authorize -->
+              <div id="driveAuthSection" style="display:none">
+                <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Autorización</div>
+                <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5">
+                  Autoriza a Mi Patrimonio para subir archivos a tu Drive. Solo tendrás acceso a los archivos que cree esta app.
+                </p>
+                <button class="btn btn-primary" style="width:100%" onclick="authorizeDrive()">
+                  🔗 Conectar con Google Drive
+                </button>
+              </div>
+
+              <!-- Upload -->
+              <div id="driveUploadSection" style="display:none">
+                <div style="font-size:12px;color:var(--muted);margin-bottom:12px" id="driveLastBackup"></div>
+                <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="uploadToDrive()" id="driveUploadBtn">
+                  ☁ Subir backup a Drive
+                </button>
+                <div id="driveFileList" style="margin-bottom:10px"></div>
+                <button class="btn btn-ghost" style="width:100%;font-size:12px" onclick="disconnectDrive()">
+                  Desconectar cuenta
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Informe Renta -->
+        <div class="card" style="margin-top:20px">
+          <div class="card-header">
+            <span class="card-title">📄 Informe Declaración de la Renta</span>
+          </div>
+          <div class="card-body">
+            <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px">
+              Genera un PDF con toda la información fiscal del ejercicio seleccionado:
+              dividendos cobrados, ganancias/pérdidas en acciones y ETFs.
+            </p>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <select id="rentaAño" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer"></select>
+              <button class="btn btn-primary" onclick="descargarRenta()" id="rentaBtn">📥 Generar PDF</button>
+            </div>
+            <div id="rentaMsg" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+          </div>
+        </div>
+
+      </div>
+
+    <!-- ── Admin ── -->
+    <!-- ── GASTOS ──────────────────────────────────────────────────────── -->
+    <div class="section" id="sec-gastos">
+
+      <!-- Summary KPIs -->
+      <div class="gastos-summary" id="gastosSummary">
+        <div class="gastos-kpi" style="--gkpi-clr:#6366f1">
+          <div class="gastos-kpi-icon">💰</div>
+          <div class="gastos-kpi-label">Ingreso mensual</div>
+          <div class="gastos-kpi-value" id="gkpi-ingreso">—</div>
+          <div class="gastos-ingreso-edit">
+            <input type="number" id="ingreso-input" placeholder="2500" step="any" min="0"
+              style="width:130px;padding:6px 10px;font-size:14px;font-weight:700"
+              onkeydown="if(event.key==='Enter')saveIngreso()">
+            <button class="btn btn-ghost btn-sm" onclick="saveIngreso()">Guardar</button>
+          </div>
+        </div>
+        <div class="gastos-kpi" style="--gkpi-clr:#f43f5e">
+          <div class="gastos-kpi-icon">📊</div>
+          <div class="gastos-kpi-label">Total gastos fijos</div>
+          <div class="gastos-kpi-value" id="gkpi-total">—</div>
+          <div class="gastos-kpi-sub" id="gkpi-pct">— del ingreso</div>
+        </div>
+        <div class="gastos-kpi" style="--gkpi-clr:#10b981">
+          <div class="gastos-kpi-icon">✅</div>
+          <div class="gastos-kpi-label">Disponible</div>
+          <div class="gastos-kpi-value" id="gkpi-libre">—</div>
+          <div class="gastos-kpi-sub" id="gkpi-libre-pct">tras restar gastos fijos</div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:13px;color:var(--muted)">Gestiona tus gastos fijos mensuales por categoría</div>
+        <button class="btn btn-primary btn-sm" onclick="openGastoModal()">+ Añadir gasto</button>
+      </div>
+
+      <!-- Category cards -->
+      <div class="cat-grid" id="gastosGrid"></div>
+
+    </div>
+
+    <div class="section" id="sec-admin">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">⚙ Administración de usuarios</span>
+        </div>
+        <div class="card-body">
+          <div id="adminUserList"></div>
+        </div>
+      </div>
+    </div>
+
+    </div><!-- /content -->
+  </main>
+</div>
+
+<!-- ── Modal ───────────────────────────────────────────────────────────── -->
+<div class="overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Añadir Snapshot</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Label / Descripción</label>
+        <input type="text" id="f-label" placeholder="Ej: Mayo 2025">
+      </div>
+      <div class="form-group full">
+        <label>Fecha</label>
+        <input type="date" id="f-fecha">
+      </div>
+      <div class="form-group">
+        <label>Acciones (€)</label>
+        <input type="number" id="f-acciones" placeholder="0" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Fondos (€)</label>
+        <input type="number" id="f-fondos" placeholder="0" min="0" step="0.01">
+      </div>
+      <div class="form-group full">
+        <label>Ahorro (€)</label>
+        <input type="number" id="f-ahorro" placeholder="0" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveSnapshot()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Accion ─────────────────────────────────────────────────────── -->
+<div class="overlay" id="accionOverlay" onclick="if(event.target===this)closeAccionModal()">
+  <div class="modal" style="width:620px">
+    <div class="modal-title" id="accionModalTitle">Añadir Operación</div>
+
+    <!-- Nombre + títulos -->
+    <div class="form-grid" style="margin-bottom:18px">
+      <div class="form-group full"><label>Acción</label><input type="text" id="fa-accion" placeholder="Ej: Santander"></div>
+      <div class="form-group full"><label>Títulos</label><input type="number" id="fa-titulos" placeholder="0" step="any" oninput="calcTotales()"></div>
+    </div>
+
+    <!-- Dos columnas: Compra | Venta -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <!-- Compra -->
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(99,102,241,.25)">Compra</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="form-group"><label>Fecha</label><input type="date" id="fa-fecha_compra"></div>
+          <div class="form-group"><label>Precio (€)</label><input type="number" id="fa-precio_compra" placeholder="0" step="any" oninput="calcTotales()"></div>
+          <div class="form-group"><label>Comisión (€)</label><input type="number" id="fa-comision_compra" placeholder="0" step="any" oninput="calcTotales()"></div>
+          <div class="form-group"><label>P. Dólar</label><input type="number" id="fa-precio_dolar_compra" placeholder="opcional" step="any"></div>
+          <div class="form-group"><label>Com. Divisa (€)</label><input type="number" id="fa-comision_divisa_c" placeholder="opcional" step="any" oninput="calcTotales()"></div>
+          <div style="padding:8px 12px;background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.2);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.05em">Total</span>
+            <span id="fa-total_compra" data-value="" style="font-weight:700">—</span>
+          </div>
+        </div>
+      </div>
+      <!-- Venta -->
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(16,185,129,.25)">Venta</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="form-group"><label>Fecha</label><input type="date" id="fa-fecha_venta"></div>
+          <div class="form-group"><label>Precio (€)</label><input type="number" id="fa-precio_venta" placeholder="0" step="any" oninput="calcTotales()"></div>
+          <div class="form-group"><label>Comisión (€)</label><input type="number" id="fa-comision_venta" placeholder="0" step="any" oninput="calcTotales()"></div>
+          <div class="form-group"><label>P. Dólar</label><input type="number" id="fa-precio_dolar_venta" placeholder="opcional" step="any"></div>
+          <div class="form-group"><label>Com. Divisa (€)</label><input type="number" id="fa-comision_divisa_v" placeholder="opcional" step="any" oninput="calcTotales()"></div>
+          <div style="padding:8px 12px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.05em">Total</span>
+            <span id="fa-total_venta" data-value="" style="font-weight:700">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Beneficio -->
+    <div style="margin-top:14px;padding:12px 16px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Beneficio</span>
+      <span id="fa-beneficio" style="font-size:18px;font-weight:800;letter-spacing:-.4px">—</span>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeAccionModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveAccion()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Dividendo ───────────────────────────────────────────────────── -->
+<div class="overlay" id="dividendoOverlay" onclick="if(event.target===this)closeDividendoModal()">
+  <div class="modal" style="width:420px">
+    <div class="modal-title" id="dividendoModalTitle">Añadir Dividendo</div>
+    <div class="form-grid">
+      <div class="form-group full"><label>Acción</label><input type="text" id="fd-accion" placeholder="Ej: Merlin Properties"></div>
+      <div class="form-group full"><label>Fecha</label><input type="date" id="fd-fecha"></div>
+      <div class="form-group"><label>€/Acción</label><input type="number" id="fd-euros_accion" placeholder="0" step="any"></div>
+      <div class="form-group"><label>Bruto (€)</label><input type="number" id="fd-bruto" placeholder="0" step="any"></div>
+      <div class="form-group full"><label>Neto (€)</label><input type="number" id="fd-neto" placeholder="0" step="any"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeDividendoModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveDividendo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Catálogo Fondo ──────────────────────────────────────────────── -->
+<div class="overlay" id="fondoCatalogoOverlay" onclick="if(event.target===this)closeFondoCatalogoModal()">
+  <div class="modal" style="width:420px">
+    <div class="modal-title" id="fondoCatalogoModalTitle">Añadir fondo a la cartera</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Nombre del fondo</label>
+        <input type="text" id="fc-nombre" placeholder="Ej: Physical Gold USD (Acc)">
+      </div>
+      <div class="form-group full">
+        <label>ISIN</label>
+        <input type="text" id="fc-isin" placeholder="Ej: IE00B4L5Y983"
+          style="text-transform:uppercase;font-family:monospace" oninput="this.value=this.value.toUpperCase()">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeFondoCatalogoModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveFondoCatalogo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal ETF Compra ──────────────────────────────────────────────────── -->
+<div class="overlay" id="etfCompraOverlay" onclick="if(event.target===this)closeEtfCompraModal()">
+  <div class="modal" style="width:460px">
+    <div class="modal-title" id="etfCompraModalTitle">Añadir Fondo Indexado</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Fondo Indexado</label>
+        <select id="fec-select" onchange="onFondoSelect()" style="background:rgba(255,255,255,.05);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;width:100%;cursor:pointer">
+          <option value="">— Selecciona un fondo —</option>
+        </select>
+      </div>
+      <!-- Nombre e ISIN se rellenan automáticamente pero son editables -->
+      <div class="form-group full" id="fec-nombre-group" style="display:none">
+        <label>Nombre (editable)</label>
+        <input type="text" id="fec-etf" placeholder="Nombre del fondo">
+      </div>
+      <div class="form-group full" id="fec-isin-group">
+        <label>ISIN</label>
+        <input type="text" id="fec-isin" placeholder="Autorellenado desde el catálogo" readonly
+          style="background:rgba(99,102,241,.05);border-color:rgba(99,102,241,.2);color:var(--accent2);font-family:monospace;cursor:default">
+      </div>
+      <div class="form-group full"><label>Fecha Compra</label><input type="date" id="fec-fecha_compra"></div>
+      <div class="form-group"><label>Precio (€)</label><input type="number" id="fec-precio" placeholder="0" step="any" oninput="calcEtfImporte()"></div>
+      <div class="form-group"><label>Títulos</label><input type="number" id="fec-titulos" placeholder="0" step="any" oninput="calcEtfImporte()"></div>
+      <div class="form-group"><label>Comisión (€)</label><input type="number" id="fec-comision" placeholder="opcional" step="any" oninput="calcEtfImporte()"></div>
+      <div class="form-group">
+        <label>Importe total (€)</label>
+        <div style="padding:10px 12px;background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.2);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center;height:42px">
+          <span style="font-size:11px;color:var(--accent2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Auto</span>
+          <span id="fec-importe" data-value="" style="font-weight:700;color:var(--accent2)">—</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeEtfCompraModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEtfCompra()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal ETF Venta ───────────────────────────────────────────────────── -->
+<div class="overlay" id="etfVentaOverlay" onclick="if(event.target===this)closeEtfVentaModal()">
+  <div class="modal" style="width:520px">
+    <div class="modal-title" id="etfVentaModalTitle">Añadir Venta de Fondo</div>
+    <div class="form-grid">
+      <div class="form-group full"><label>Fondo Indexado</label><input type="text" id="fev-etf" placeholder="Ej: Physical Gold USD (Acc)"></div>
+      <div class="form-group full"><label>Fecha Venta</label><input type="date" id="fev-fecha_venta"></div>
+      <div class="form-group"><label>Coste Total (€)</label><input type="number" id="fev-coste_total" placeholder="0" step="any"></div>
+      <div class="form-group"><label>Com. Compra (€)</label><input type="number" id="fev-comision_compra" placeholder="0" step="any"></div>
+      <div class="form-group"><label>Cantidad títulos</label><input type="number" id="fev-cantidad" placeholder="0" step="any"></div>
+      <div class="form-group"><label>Precio Venta (€)</label><input type="number" id="fev-precio_venta" placeholder="0" step="any"></div>
+      <div class="form-group"><label>Venta Bruto (€)</label><input type="number" id="fev-venta_bruto" placeholder="0" step="any"></div>
+      <div class="form-group"><label>Venta Neto (€)</label><input type="number" id="fev-venta_neto" placeholder="0" step="any"></div>
+      <div class="form-group"><label>Comisión Venta (€)</label><input type="number" id="fev-comision_venta" placeholder="0" step="any"></div>
+      <div class="form-group"><label>IRPF (€)</label><input type="number" id="fev-irpf" placeholder="0" step="any"></div>
+      <div class="form-group"><label>Ganancia s/IRPF (€)</label><input type="number" id="fev-ganancia_sin_irpf" placeholder="0" step="any"></div>
+      <div class="form-group"><label>Ganancia c/IRPF (€)</label><input type="number" id="fev-ganancia_con_irpf" placeholder="0" step="any"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeEtfVentaModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEtfVenta()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Gasto ───────────────────────────────────────────────────────── -->
+<div class="overlay" id="gastoOverlay" onclick="if(event.target===this)closeGastoModal()">
+  <div class="modal" style="width:420px">
+    <div class="modal-title" id="gastoModalTitle">Añadir gasto</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Nombre del gasto</label>
+        <input type="text" id="fg-nombre" placeholder="Ej: Alquiler, Netflix, Gym…">
+      </div>
+      <div class="form-group">
+        <label>Importe (€/mes)</label>
+        <input type="number" id="fg-importe" placeholder="0" step="any" min="0">
+      </div>
+      <div class="form-group">
+        <label>Categoría</label>
+        <select id="fg-categoria">
+          <option value="Vivienda">🏠 Vivienda</option>
+          <option value="Alimentación">🛒 Alimentación</option>
+          <option value="Transporte">🚗 Transporte</option>
+          <option value="Suscripciones">📱 Suscripciones</option>
+          <option value="Salud">💊 Salud</option>
+          <option value="Ocio">🎮 Ocio</option>
+          <option value="Otros">📦 Otros</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeGastoModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveGasto()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast Container ──────────────────────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<script>
+// ── Globals ──────────────────────────────────────────────────────────────
+let snapshots = [];
+let config = {};
+let charts = {};
+let editingId = null;
+
+const COLORS = {
+  acciones: '#6366f1',
+  fondos:   '#10b981',
+  ahorro:   '#f59e0b',
+  total:    '#818cf8',
+};
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+const fmt = (n) => new Intl.NumberFormat('es-ES', {
+  style: 'currency', currency: 'EUR', minimumFractionDigits: 2
+}).format(n);
+
+const fmtPct = (n, decimals = 2) => {
+  const sign = n > 0 ? '+' : '';
+  return `${sign}${n.toFixed(decimals)}%`;
+};
+
+const fmtShort = (n) => {
+  if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(2) + 'M€';
+  if (Math.abs(n) >= 1e3) return (n / 1e3).toFixed(1) + 'k€';
+  return fmt(n);
+};
+
+const total = (s) => s.acciones + s.fondos + s.ahorro;
+
+const deltaClass = (v) => v > 0 ? 'pos' : v < 0 ? 'neg' : 'neu';
+const deltaSign  = (v) => v > 0 ? '+' : '';
+
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ── Navigation ──────────────────────────────────────────────────────────
+const pages = {
+  dashboard:    { title: 'Dashboard',          subtitle: 'Resumen de tu patrimonio' },
+  snapshots:    { title: 'Snapshots',          subtitle: 'Historial de registros' },
+  objetivo:     { title: 'Objetivo',           subtitle: 'Calculadora de metas financieras' },
+  estadisticas: { title: 'Estadísticas',       subtitle: 'Análisis de rendimiento' },
+  operaciones:  { title: 'Operaciones',        subtitle: 'Historial de compra-venta de acciones y fondos' },
+  backup:       { title: 'Copia de seguridad', subtitle: 'Descarga o sincroniza tus datos' },
+  gastos:       { title: 'Gastos',             subtitle: 'Control de gastos fijos mensuales' },
+  admin:        { title: 'Administración',     subtitle: 'Gestión de usuarios y permisos' },
+};
+
+function navigate(name) {
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.section === name);
+  });
+  document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+  document.getElementById(`sec-${name}`).classList.add('active');
+
+  document.getElementById('pageTitle').textContent    = pages[name].title;
+  document.getElementById('pageSubtitle').textContent = pages[name].subtitle;
+
+  const tbr = document.getElementById('topbarRight');
+  tbr.innerHTML = '';
+  if (name === 'snapshots') {
+    tbr.innerHTML = `<button class="btn btn-primary btn-sm" onclick="openModal()">+ Añadir Snapshot</button>`;
+  }
+
+  if (name === 'dashboard')    renderDashboard();
+  if (name === 'estadisticas') renderEstadisticas();
+  if (name === 'gastos')       renderGastos();
+}
+
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.addEventListener('click', () => navigate(el.dataset.section));
+});
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ── API ──────────────────────────────────────────────────────────────────
+async function loadSnapshots() {
+  const res = await fetch('/api/snapshots');
+  snapshots = await res.json();
+}
+
+async function loadConfig() {
+  const res = await fetch('/api/config');
+  config = await res.json();
+}
+
+async function saveConfigKey(key, value) {
+  await fetch('/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key, value }),
+  });
+}
+
+// ── Dashboard ────────────────────────────────────────────────────────────
+function renderDashboard() {
+  if (!snapshots.length) return;
+  const last = snapshots[snapshots.length - 1];
+  const prev = snapshots.length > 1 ? snapshots[snapshots.length - 2] : null;
+
+  const kpis = [
+    { label: 'Total Patrimonio', value: total(last), prevValue: prev ? total(prev) : null, clr: '#6366f1' },
+    { label: 'Acciones',         value: last.acciones, prevValue: prev?.acciones, clr: '#6366f1' },
+    { label: 'Fondos Indexados',     value: last.fondos,   prevValue: prev?.fondos,   clr: '#10b981' },
+    { label: 'Ahorro',           value: last.ahorro,   prevValue: prev?.ahorro,   clr: '#f59e0b' },
+  ];
+
+  const grid = document.getElementById('kpiGrid');
+  grid.innerHTML = kpis.map(k => {
+    let deltaHtml = '';
+    if (k.prevValue !== null && k.prevValue !== undefined) {
+      const pct = ((k.value - k.prevValue) / k.prevValue) * 100;
+      const cls = deltaClass(pct);
+      deltaHtml = `<div class="kpi-delta ${cls}">${pct > 0 ? '▲' : pct < 0 ? '▼' : '�'} ${fmtPct(pct)}</div>`;
+    }
+    return `
+      <div class="kpi-card" style="--accent-clr:${k.clr}">
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-value" title="${fmt(k.value)}">${fmtShort(k.value)}</div>
+        ${deltaHtml}
+      </div>`;
+  }).join('');
+
+  renderChartTotal();
+  renderChartDonut(last);
+  renderChartStacked();
+}
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function chartDefaults() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 900, easing: 'easeInOutQuart' },
+    plugins: {
+      legend: { labels: { color: '#6b6b8a', font: { family: 'Plus Jakarta Sans', size: 12 }, boxWidth: 12 } },
+      tooltip: {
+        backgroundColor: 'rgba(15,15,30,.95)',
+        borderColor: 'rgba(255,255,255,.1)',
+        borderWidth: 1,
+        padding: 12,
+        titleFont: { family: 'Plus Jakarta Sans', weight: '700' },
+        bodyFont:  { family: 'Plus Jakarta Sans' },
+        titleColor: '#e8e8f0',
+        bodyColor:  '#9090b0',
+      },
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(255,255,255,.04)' },
+        ticks: { color: '#6b6b8a', font: { family: 'Plus Jakarta Sans', size: 11 } },
+      },
+      y: {
+        grid: { color: 'rgba(255,255,255,.04)' },
+        ticks: {
+          color: '#6b6b8a',
+          font: { family: 'Plus Jakarta Sans', size: 11 },
+          callback: (v) => fmtShort(v),
+        },
+      },
+    },
+  };
+}
+
+function renderChartTotal() {
+  destroyChart('total');
+  const labels = snapshots.map(s => s.label);
+  const data   = snapshots.map(s => total(s));
+  const ctx    = document.getElementById('chartTotal').getContext('2d');
+
+  const grad = ctx.createLinearGradient(0, 0, 0, 260);
+  grad.addColorStop(0, 'rgba(99,102,241,.35)');
+  grad.addColorStop(1, 'rgba(99,102,241,.02)');
+
+  charts.total = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Patrimonio Total',
+        data,
+        borderColor: '#6366f1',
+        backgroundColor: grad,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: '#6366f1',
+        pointBorderColor: '#0a0a0f',
+        pointBorderWidth: 2,
+        borderWidth: 2.5,
+      }],
+    },
+    options: {
+      ...chartDefaults(),
+      plugins: {
+        ...chartDefaults().plugins,
+        tooltip: {
+          ...chartDefaults().plugins.tooltip,
+          callbacks: {
+            label: (ctx) => ` ${fmt(ctx.raw)}`,
+          },
+        },
+      },
+    },
+  });
+}
+
+function renderChartDonut(last) {
+  destroyChart('donut');
+  const ctx = document.getElementById('chartDonut').getContext('2d');
+  charts.donut = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Acciones', 'Fondos', 'Ahorro'],
+      datasets: [{
+        data: [last.acciones, last.fondos, last.ahorro],
+        backgroundColor: [
+          'rgba(99,102,241,.85)',
+          'rgba(16,185,129,.85)',
+          'rgba(245,158,11,.85)',
+        ],
+        borderColor: '#09090f',
+        borderWidth: 3,
+        hoverOffset: 6,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 900 },
+      cutout: '68%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: '#6b6b8a',
+            font: { family: 'Plus Jakarta Sans', size: 12 },
+            padding: 16,
+          },
+        },
+        tooltip: {
+          ...chartDefaults().plugins.tooltip,
+          callbacks: {
+            label: (ctx) => {
+              const t = total(snapshots[snapshots.length-1]);
+              const pct = ((ctx.raw / t) * 100).toFixed(1);
+              return ` ${fmt(ctx.raw)} (${pct}%)`;
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+function renderChartStacked() {
+  destroyChart('stacked');
+  const labels = snapshots.map(s => s.label);
+  const ctx    = document.getElementById('chartStacked').getContext('2d');
+  charts.stacked = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Acciones', data: snapshots.map(s=>s.acciones), backgroundColor: 'rgba(99,102,241,.8)',  borderRadius: 0 },
+        { label: 'Fondos',   data: snapshots.map(s=>s.fondos),   backgroundColor: 'rgba(16,185,129,.8)', borderRadius: 0 },
+        { label: 'Ahorro',   data: snapshots.map(s=>s.ahorro),   backgroundColor: 'rgba(245,158,11,.8)', borderRadius: 4 },
+      ],
+    },
+    options: {
+      ...chartDefaults(),
+      plugins: {
+        ...chartDefaults().plugins,
+        tooltip: {
+          ...chartDefaults().plugins.tooltip,
+          callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${fmt(ctx.raw)}` },
+        },
+      },
+      scales: {
+        ...chartDefaults().scales,
+        x: { ...chartDefaults().scales.x, stacked: true },
+        y: { ...chartDefaults().scales.y, stacked: true },
+      },
+    },
+  });
+}
+
+// ── Snapshots ────────────────────────────────────────────────────────────
+function renderSnapshotsTable() {
+  const tbody = document.getElementById('snapshotsBody');
+  tbody.innerHTML = snapshots.map(s => {
+    const tot = total(s);
+    return `<tr>
+      <td>${s.fecha}</td>
+      <td class="fw-700">${s.label}</td>
+      <td class="text-right">${fmt(s.acciones)}</td>
+      <td class="text-right">${fmt(s.fondos)}</td>
+      <td class="text-right">${fmt(s.ahorro)}</td>
+      <td class="text-right fw-700">${fmt(tot)}</td>
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-ghost btn-sm" onclick="openEditModal(${s.id})">✎</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteSnapshot(${s.id})">✕</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openModal(id) {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Añadir Snapshot';
+  ['label','fecha','acciones','fondos','ahorro'].forEach(f => document.getElementById(`f-${f}`).value = '');
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function openEditModal(id) {
+  const s = snapshots.find(s => s.id === id);
+  if (!s) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Editar Snapshot';
+  document.getElementById('f-label').value    = s.label;
+  document.getElementById('f-fecha').value    = s.fecha;
+  document.getElementById('f-acciones').value = s.acciones;
+  document.getElementById('f-fondos').value   = s.fondos;
+  document.getElementById('f-ahorro').value   = s.ahorro;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function closeModalOutside(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+
+async function saveSnapshot() {
+  const payload = {
+    label:    document.getElementById('f-label').value.trim(),
+    fecha:    document.getElementById('f-fecha').value,
+    acciones: parseFloat(document.getElementById('f-acciones').value) || 0,
+    fondos:   parseFloat(document.getElementById('f-fondos').value)   || 0,
+    ahorro:   parseFloat(document.getElementById('f-ahorro').value)   || 0,
+  };
+  if (!payload.label || !payload.fecha) { toast('Label y fecha son obligatorios', 'error'); return; }
+
+  const url    = editingId ? `/api/snapshots/${editingId}` : '/api/snapshots';
+  const method = editingId ? 'PUT' : 'POST';
+
+  const res = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) { toast('Error al guardar', 'error'); return; }
+  toast(editingId ? 'Snapshot actualizado' : 'Snapshot añadido');
+  closeModal();
+  await loadSnapshots();
+  renderSnapshotsTable();
+}
+
+async function deleteSnapshot(id) {
+  if (!confirm('¿Eliminar este snapshot?')) return;
+  const res = await fetch(`/api/snapshots/${id}`, { method: 'DELETE' });
+  if (!res.ok) { toast('Error al eliminar', 'error'); return; }
+  toast('Snapshot eliminado');
+  await loadSnapshots();
+  renderSnapshotsTable();
+}
+
+// ── Objetivo ─────────────────────────────────────────────────────────────
+function renderObjetivo() {
+  // Populate fields from config
+  if (config.salario)  document.getElementById('cfg-salario').value  = config.salario;
+  if (config.gastos)   document.getElementById('cfg-gastos').value   = config.gastos;
+  if (config.objetivo) document.getElementById('cfg-objetivo').value = config.objetivo;
+  if (config.fecha)    document.getElementById('cfg-fecha').value    = config.fecha;
+  calcObjetivo();
+}
+
+async function saveConfig() {
+  const keys = ['salario','gastos','objetivo','fecha'];
+  for (const k of keys) {
+    const el = document.getElementById(`cfg-${k}`);
+    if (el) {
+      config[k] = el.value;
+      await saveConfigKey(k, el.value);
+    }
+  }
+  toast('Configuración guardada');
+  calcObjetivo();
+}
+
+function calcObjetivo() {
+  const salario  = parseFloat(config.salario)  || 0;
+  const gastos   = parseFloat(config.gastos)   || 0;
+  const objetivo = parseFloat(config.objetivo) || 0;
+  const fechaStr = config.fecha;
+
+  if (!snapshots.length) return;
+  const last     = snapshots[snapshots.length - 1];
+  const patriActual = total(last);
+
+  const ahorro_mes  = salario - gastos;
+  const falta       = Math.max(0, objetivo - patriActual);
+
+  let meses = 0;
+  if (fechaStr) {
+    const now   = new Date();
+    const goal  = new Date(fechaStr);
+    meses = Math.max(0, Math.round((goal - now) / (1000 * 60 * 60 * 24 * 30.44)));
+  }
+
+  // Proyecciones
+  const tae7 = 0.07 / 12;  // monthly rate 7%
+  const tae4 = 0.04 / 12;  // monthly rate 4%
+
+  function proyeccion(rate, meses, ahorro_mes, inicio) {
+    const points = [inicio];
+    let val = inicio;
+    for (let m = 1; m <= meses; m++) {
+      val = val * (1 + rate) + ahorro_mes;
+      points.push(val);
+    }
+    return points;
+  }
+
+  const p0  = proyeccion(0,    meses, ahorro_mes, patriActual);
+  const p4  = proyeccion(tae4, meses, ahorro_mes, patriActual);
+  const p7  = proyeccion(tae7, meses, ahorro_mes, patriActual);
+
+  const finalSin = p0[p0.length - 1];
+  const final7   = p7[p7.length - 1];
+  const final4   = p4[p4.length - 1];
+
+  const llegaSin = finalSin >= objetivo;
+  const llega7   = final7 >= objetivo;
+  const llega4   = final4 >= objetivo;
+
+  // Mínimo mensual sin rendimiento
+  const minMensual = meses > 0 ? falta / meses : falta;
+
+  const stats = document.getElementById('objetivoStats');
+  stats.innerHTML = `
+    <div class="stat-row">
+      <span class="stat-row-label">Ahorro disponible al mes</span>
+      <span class="stat-row-value ${ahorro_mes >= 0 ? 'pos' : 'neg'}">${fmt(ahorro_mes)}</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-row-label">Patrimonio actual</span>
+      <span class="stat-row-value">${fmt(patriActual)}</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-row-label">Objetivo de patrimonio</span>
+      <span class="stat-row-value">${fmt(objetivo)}</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-row-label">Cantidad que falta</span>
+      <span class="stat-row-value ${falta === 0 ? 'pos' : 'neg'}">${fmt(falta)}</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-row-label">Meses hasta fecha objetivo</span>
+      <span class="stat-row-value">${meses} meses</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-row-label">Ahorro mínimo necesario (sin rend.)</span>
+      <span class="stat-row-value">${fmt(minMensual)}/mes</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-row-label">Proyección optimista (7% TAE)</span>
+      <span class="stat-row-value pos">${fmt(final7)}</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-row-label">Proyección conservadora (4% TAE)</span>
+      <span class="stat-row-value">${fmt(final4)}</span>
+    </div>
+    <div class="goal-result ${llega7 ? 'yes' : 'no'}">
+      <span class="goal-icon">${llega7 ? '✅' : '��'}</span>
+      <span>${llega7 ? '¡Llegarás al objetivo con 7% TAE!' : llega4 ? 'Solo llegas con 7% TAE, ajusta el ahorro' : 'No llegarás al objetivo en plazo'}</span>
+    </div>
+  `;
+
+  // Chart
+  renderChartObjetivo(p0, p4, p7, objetivo, meses);
+}
+
+function renderChartObjetivo(p0, p4, p7, objetivo, meses) {
+  destroyChart('objetivo');
+  const ctx = document.getElementById('chartObjetivo').getContext('2d');
+
+  const labels = Array.from({ length: p0.length }, (_, i) => i === 0 ? 'Hoy' : `M${i}`);
+
+  charts.objetivo = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Sin rendimiento',
+          data: p0,
+          borderColor: '#6b6b8a',
+          backgroundColor: 'transparent',
+          tension: 0.3,
+          pointRadius: 0,
+          borderWidth: 2,
+          borderDash: [4,4],
+        },
+        {
+          label: '4% TAE',
+          data: p4,
+          borderColor: '#10b981',
+          backgroundColor: 'transparent',
+          tension: 0.3,
+          pointRadius: 0,
+          borderWidth: 2,
+        },
+        {
+          label: '7% TAE',
+          data: p7,
+          borderColor: '#6366f1',
+          backgroundColor: 'rgba(99,102,241,.08)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 0,
+          borderWidth: 2.5,
+        },
+        {
+          label: 'Objetivo',
+          data: Array(p0.length).fill(objetivo),
+          borderColor: '#f43f5e',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          borderDash: [8,4],
+          pointRadius: 0,
+        },
+      ],
+    },
+    options: {
+      ...chartDefaults(),
+      plugins: {
+        ...chartDefaults().plugins,
+        tooltip: {
+          ...chartDefaults().plugins.tooltip,
+          callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${fmt(ctx.raw)}` },
+        },
+      },
+    },
+  });
+}
+
+// ── Estadísticas ─────────────────────────────────────────────────────────
+function renderEstadisticas() {
+  if (snapshots.length < 2) return;
+
+  // Monthly returns
+  const deltas = [];
+  for (let i = 1; i < snapshots.length; i++) {
+    const a = snapshots[i-1], b = snapshots[i];
+    const ta = total(a), tb = total(b);
+    deltas.push({
+      label:    b.label,
+      dAcc:     b.acciones - a.acciones,
+      dFondos:  b.fondos   - a.fondos,
+      dAhorro:  b.ahorro   - a.ahorro,
+      dTotal:   tb - ta,
+      pctTotal: ta ? ((tb - ta) / ta) * 100 : 0,
+      pctAcc:   a.acciones ? ((b.acciones - a.acciones) / a.acciones) * 100 : 0,
+      pctFondos:a.fondos   ? ((b.fondos   - a.fondos)   / a.fondos)   * 100 : 0,
+      pctAhorro:a.ahorro   ? ((b.ahorro   - a.ahorro)   / a.ahorro)   * 100 : 0,
+    });
+  }
+
+  const best = deltas.reduce((a, b) => b.pctTotal > a.pctTotal ? b : a);
+  const worst= deltas.reduce((a, b) => b.pctTotal < a.pctTotal ? b : a);
+
+  const first = snapshots[0], last = snapshots[snapshots.length-1];
+  const totalVar = ((total(last) - total(first)) / total(first)) * 100;
+
+  document.getElementById('statsHighlights').innerHTML = `
+    <div class="stats-highlight">
+      <div class="sh-label">Mejor mes</div>
+      <div class="sh-value" style="color:var(--green)">${best.label}</div>
+      <div style="color:var(--muted);font-size:13px;margin-top:4px">${fmtPct(best.pctTotal)}</div>
+    </div>
+    <div class="stats-highlight">
+      <div class="sh-label">Peor mes</div>
+      <div class="sh-value" style="color:var(--red)">${worst.label}</div>
+      <div style="color:var(--muted);font-size:13px;margin-top:4px">${fmtPct(worst.pctTotal)}</div>
+    </div>
+    <div class="stats-highlight">
+      <div class="sh-label">Variación total</div>
+      <div class="sh-value" style="color:${totalVar>=0?'var(--green)':'var(--red)'}">${fmtPct(totalVar)}</div>
+      <div style="color:var(--muted);font-size:13px;margin-top:4px">desde ${first.label}</div>
+    </div>
+  `;
+
+  // Delta table
+  document.getElementById('deltaBody').innerHTML = deltas.map(d => `
+    <tr>
+      <td class="fw-700">${d.label}</td>
+      <td class="text-right"><span class="badge badge-${deltaClass(d.dAcc)}">${deltaSign(d.dAcc)}${fmt(d.dAcc)}</span></td>
+      <td class="text-right"><span class="badge badge-${deltaClass(d.dFondos)}">${deltaSign(d.dFondos)}${fmt(d.dFondos)}</span></td>
+      <td class="text-right"><span class="badge badge-${deltaClass(d.dAhorro)}">${deltaSign(d.dAhorro)}${fmt(d.dAhorro)}</span></td>
+      <td class="text-right"><span class="badge badge-${deltaClass(d.dTotal)}">${deltaSign(d.dTotal)}${fmt(d.dTotal)}</span></td>
+      <td class="text-right"><span class="badge badge-${deltaClass(d.pctTotal)}">${fmtPct(d.pctTotal)}</span></td>
+    </tr>
+  `).join('');
+
+  // Rendimiento chart
+  destroyChart('rendimiento');
+  const ctx1 = document.getElementById('chartRendimiento').getContext('2d');
+  charts.rendimiento = new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: deltas.map(d => d.label),
+      datasets: [
+        { label: 'Total (%)',   data: deltas.map(d=>+d.pctTotal.toFixed(2)), backgroundColor: deltas.map(d => d.pctTotal>=0?'rgba(99,102,241,.8)':'rgba(244,63,94,.8)'), borderRadius: 4 },
+      ],
+    },
+    options: {
+      ...chartDefaults(),
+      plugins: {
+        ...chartDefaults().plugins,
+        legend: { display: false },
+        tooltip: {
+          ...chartDefaults().plugins.tooltip,
+          callbacks: { label: (c) => ` ${fmtPct(c.raw)}` },
+        },
+      },
+      scales: {
+        x: { ...chartDefaults().scales.x },
+        y: {
+          ...chartDefaults().scales.y,
+          ticks: { ...chartDefaults().scales.y.ticks, callback: (v) => v + '%' },
+        },
+      },
+    },
+  });
+
+  // Acumulado
+  destroyChart('acumulado');
+  const ctx2 = document.getElementById('chartAcumulado').getContext('2d');
+  const base = total(snapshots[0]);
+  const cumData = snapshots.map(s => +( ((total(s) - base) / base) * 100 ).toFixed(2));
+  const grad2   = ctx2.createLinearGradient(0, 0, 0, 240);
+  grad2.addColorStop(0, 'rgba(16,185,129,.3)');
+  grad2.addColorStop(1, 'rgba(16,185,129,.02)');
+
+  charts.acumulado = new Chart(ctx2, {
+    type: 'line',
+    data: {
+      labels: snapshots.map(s => s.label),
+      datasets: [{
+        label: 'Variación acumulada',
+        data: cumData,
+        borderColor: '#10b981',
+        backgroundColor: grad2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 4,
+        pointBackgroundColor: '#10b981',
+        pointBorderColor: '#09090f',
+        pointBorderWidth: 2,
+        borderWidth: 2,
+      }],
+    },
+    options: {
+      ...chartDefaults(),
+      plugins: {
+        ...chartDefaults().plugins,
+        legend: { display: false },
+        tooltip: {
+          ...chartDefaults().plugins.tooltip,
+          callbacks: { label: (c) => ` ${fmtPct(c.raw)}` },
+        },
+      },
+      scales: {
+        x: { ...chartDefaults().scales.x },
+        y: {
+          ...chartDefaults().scales.y,
+          ticks: { ...chartDefaults().scales.y.ticks, callback: (v) => v + '%' },
+        },
+      },
+    },
+  });
+}
+
+// ── Operaciones data ──────────────────────────────────────────────────────
+let accionesOps = [];
+let dividendos  = [];
+let etfCompras  = [];
+let etfVentas   = [];
+
+async function loadOperaciones() {
+  [accionesOps, dividendos, etfCompras, etfVentas, fondosCatalogo] = await Promise.all([
+    fetch('/api/acciones').then(r=>r.json()),
+    fetch('/api/dividendos').then(r=>r.json()),
+    fetch('/api/etf-compras').then(r=>r.json()),
+    fetch('/api/etf-ventas').then(r=>r.json()),
+    fetch('/api/fondos-catalogo').then(r=>r.json()),
+  ]);
+}
+
+// ── Sub-tabs ──────────────────────────────────────────────────────────────
+function switchSubtab(name) {
+  document.querySelectorAll('.subtab').forEach(b => b.classList.toggle('active', b.dataset.subtab === name));
+  document.querySelectorAll('.subtab-panel').forEach(p => p.classList.toggle('active', p.id === `subpanel-${name}`));
+  if (name === 'dividendos') renderDividendosTable();
+}
+
+// ── Render Operaciones ────────────────────────────────────────────────────
+function renderOperaciones() {
+  renderAccionesGroups();
+  renderDividendosTable();
+  renderFondoCatalogoList();
+  renderEtfComprasGroups();
+  renderEtfVentasTable();
+}
+
+function yearOf(dateStr) {
+  if (!dateStr) return 'Sin fecha';
+  return dateStr.substring(0, 4);
+}
+
+function groupByYear(rows, dateField) {
+  const map = {};
+  for (const r of rows) {
+    const y = yearOf(r[dateField]);
+    if (!map[y]) map[y] = [];
+    map[y].push(r);
+  }
+  return map;
+}
+
+function fmtN(v, decimals = 2) {
+  if (v === null || v === undefined || v === '') return '—';
+  return new Intl.NumberFormat('es-ES', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(v);
+}
+
+function fmtE(v) {
+  if (v === null || v === undefined || v === '') return '—';
+  return fmt(v);
+}
+
+function benefBadge(v) {
+  if (v === null || v === undefined) return '<span class="badge badge-neu">—</span>';
+  const cls = v > 0 ? 'pos' : v < 0 ? 'neg' : 'neu';
+  const sign = v > 0 ? '+' : '';
+  return `<span class="badge badge-${cls}">${sign}${fmt(v)}</span>`;
+}
+
+// ── Acciones groups ───────────────────────────────────────────────────────
+function renderAccionesGroups() {
+  const grouped = {};
+  for (const r of accionesOps) {
+    const key = r.fecha_venta ? yearOf(r.fecha_venta) : '__actuales__';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(r);
+  }
+  const years = ['__actuales__', ...Object.keys(grouped).filter(k => k !== '__actuales__').sort((a,b) => b.localeCompare(a))]
+    .filter(k => grouped[k]);
+  const container = document.getElementById('accionesGroups');
+
+  container.innerHTML = years.map(yr => {
+    const rows    = grouped[yr];
+    const isActuales = yr === '__actuales__';
+    const label   = isActuales ? 'Actuales' : yr;
+    const totalC  = rows.reduce((s,r) => s + (r.total_compra || 0), 0);
+    const totalV  = rows.reduce((s,r) => s + (!isActuales ? (r.total_venta || 0) : 0), 0);
+    const totalB  = rows.reduce((s,r) => s + (!isActuales ? (r.beneficio   || 0) : 0), 0);
+    const bSign   = totalB >= 0 ? 'pos' : 'neg';
+
+    const trs = rows.map(r => `
+      <tr>
+        <td class="fw-700">${r.accion}</td>
+        <td>${r.fecha_compra || '—'}</td>
+        <td>${r.fecha_venta || '<span style="color:var(--muted);font-size:11px">Abierta</span>'}</td>
+        <td class="text-right">${fmtN(r.titulos, 0)}</td>
+        <td class="text-right">${fmtN(r.precio_compra)}</td>
+        <td class="text-right text-muted">${fmtE(r.comision_compra)}</td>
+        <td class="text-right">${r.precio_venta ? fmtN(r.precio_venta) : '—'}</td>
+        <td class="text-right text-muted">${r.precio_venta ? fmtE(r.comision_venta) : '—'}</td>
+        <td class="text-right">${fmtE(r.total_compra)}</td>
+        <td class="text-right">${r.total_venta ? fmtE(r.total_venta) : '—'}</td>
+        <td class="text-right">${r.fecha_venta ? benefBadge(r.beneficio) : '—'}</td>
+        ${r.precio_dolar_compra ? `<td class="text-right text-muted" style="font-size:11px">$${fmtN(r.precio_dolar_compra,4)}</td>` : '<td></td>'}
+        <td>
+          <div class="td-actions">
+            <button class="btn btn-ghost btn-sm" onclick="openEditAccionModal(${r.id})">✎</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteAccion(${r.id})">✕</button>
+          </div>
+        </td>
+      </tr>`).join('');
+
+    return `
+      <div class="year-group" id="yg-acc-${label}">
+        <div class="year-header" onclick="toggleYearGroup('yg-acc-${label}')">
+          <span class="year-label">${label}</span>
+          <div class="year-summary">
+            <span>Invertido: <strong>${fmt(totalC)}</strong></span>
+            ${isActuales
+              ? `<span style="color:var(--accent2)">${rows.length} posición${rows.length !== 1 ? 'es' : ''} abierta${rows.length !== 1 ? 's' : ''}</span>`
+              : `<span>Recuperado: <strong>${fmt(totalV)}</strong></span>
+                 <span class="${bSign}">Beneficio: <strong>${totalB >= 0 ? '+' : ''}${fmt(totalB)}</strong></span>`
+            }
+            <span class="year-toggle">▾</span>
+          </div>
+        </div>
+        <div class="year-body">
+          <div class="card">
+            <div class="card-body" style="padding:0">
+              <div class="table-wrap">
+                <table>
+                  <thead><tr>
+                    <th>Acción</th><th>F.Compra</th><th>F.Venta</th>
+                    <th class="text-right">Títulos</th>
+                    <th class="text-right">P.Compra</th>
+                    <th class="text-right">Com.C</th>
+                    <th class="text-right">P.Venta</th>
+                    <th class="text-right">Com.V</th>
+                    <th class="text-right">T.Compra</th>
+                    <th class="text-right">T.Venta</th>
+                    <th class="text-right">Beneficio</th>
+                    <th>USD</th><th></th>
+                  </tr></thead>
+                  <tbody>${trs}</tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleYearGroup(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+
+// ── Dividendos table ──────────────────────────────────────────────────────
+function renderDividendosTable() {
+  const container = document.getElementById('dividendosGroups');
+  if (!container) return;
+
+  // Agrupar por año
+  const byYear = {};
+  for (const r of dividendos) {
+    const yr = r.fecha ? r.fecha.slice(0, 4) : 'Sin fecha';
+    if (!byYear[yr]) byYear[yr] = [];
+    byYear[yr].push(r);
+  }
+  const years = Object.keys(byYear).sort((a, b) => b - a);
+
+  container.innerHTML = years.map(yr => {
+    const rows = byYear[yr];
+    const totalBruto = rows.reduce((s, r) => s + (r.bruto || 0), 0);
+    const totalNeto  = rows.reduce((s, r) => s + (r.neto  || 0), 0);
+    return `
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <span class="card-title">${yr}</span>
+          <span style="font-size:12px;color:var(--muted)">Bruto: ${fmt(totalBruto)} · Neto: ${fmt(totalNeto)}</span>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Acción</th><th>Fecha</th>
+                <th class="text-right">€/Acción</th>
+                <th class="text-right">Bruto</th>
+                <th class="text-right">Neto</th>
+                <th></th>
+              </tr></thead>
+              <tbody>
+                ${rows.map(r => `
+                  <tr>
+                    <td class="fw-700">${r.accion}</td>
+                    <td>${r.fecha || '—'}</td>
+                    <td class="text-right">${fmtN(r.euros_accion, 3)}</td>
+                    <td class="text-right">${fmtE(r.bruto)}</td>
+                    <td class="text-right"><span class="badge badge-pos">${fmtE(r.neto)}</span></td>
+                    <td>
+                      <div class="td-actions">
+                        <button class="btn btn-ghost btn-sm" onclick="openEditDividendoModal(${r.id})">✎</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteDividendo(${r.id})">✕</button>
+                      </div>
+                    </td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── ETF Compras groups ────────────────────────────────────────────────────
+function renderEtfComprasGroups() {
+  const q = (document.getElementById('etfSearchInput')?.value || '').toLowerCase().trim();
+  const filtered = q ? etfCompras.filter(r => r.etf.toLowerCase().includes(q)) : etfCompras;
+  const grouped  = groupByYear(filtered, 'fecha_compra');
+  const years    = Object.keys(grouped).sort((a,b) => b.localeCompare(a));
+  const container = document.getElementById('etfComprasGroups');
+
+  if (!filtered.length) {
+    container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--muted)">Sin resultados para "<strong>${q}</strong>"</div>`;
+    return;
+  }
+
+  container.innerHTML = years.map(yr => {
+    const rows      = grouped[yr];
+    const totalInv  = rows.reduce((s,r) => s + (r.importe || 0), 0);
+    const nOps      = rows.length;
+
+    const trs = rows.map(r => `
+      <tr>
+        <td style="max-width:240px">
+          <div class="fw-700">${r.etf}</div>
+          ${r.isin ? `<div style="font-size:11px;color:var(--muted);font-family:monospace;margin-top:2px">${r.isin}</div>` : ''}
+        </td>
+        <td>${r.fecha_compra || '—'}</td>
+        <td class="text-right">${fmtE(r.importe)}</td>
+        <td class="text-right">${fmtN(r.precio)}</td>
+        <td class="text-right">${fmtN(r.titulos, 6)}</td>
+        <td class="text-right text-muted">${r.comision ? fmtE(r.comision) : '—'}</td>
+        <td>
+          <div class="td-actions">
+            <button class="btn btn-ghost btn-sm" onclick="openEditEtfCompraModal(${r.id})">✎</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteEtfCompra(${r.id})">✕</button>
+          </div>
+        </td>
+      </tr>`).join('');
+
+    return `
+      <div class="year-group" id="yg-etf-${yr}">
+        <div class="year-header" onclick="toggleYearGroup('yg-etf-${yr}')">
+          <span class="year-label">${yr}</span>
+          <div class="year-summary">
+            <span><strong>${nOps}</strong> compras</span>
+            <span>Total invertido: <strong>${fmt(totalInv)}</strong></span>
+            <span class="year-toggle">▾</span>
+          </div>
+        </div>
+        <div class="year-body">
+          <div class="card">
+            <div class="card-body" style="padding:0">
+              <div class="table-wrap">
+                <table>
+                  <thead><tr>
+                    <th>Fondo</th><th>Fecha</th>
+                    <th class="text-right">Importe</th>
+                    <th class="text-right">Precio</th>
+                    <th class="text-right">Títulos</th>
+                    <th class="text-right">Comisión</th>
+                    <th></th>
+                  </tr></thead>
+                  <tbody>${trs}</tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── ETF KPIs ──────────────────────────────────────────────────────────────
+function renderEtfKpis() {
+  const totalInvertido  = etfCompras.reduce((s,r) => s + (r.importe || 0), 0);
+  const totalVentaNeto  = etfVentas.reduce((s,r) => s + (r.venta_neto || 0), 0);
+  const totalGanSinIRPF = etfVentas.reduce((s,r) => s + (r.ganancia_sin_irpf || 0), 0);
+  const totalGanConIRPF = etfVentas.reduce((s,r) => s + (r.ganancia_con_irpf || 0), 0);
+  const totalIRPF       = etfVentas.reduce((s,r) => s + (r.irpf || 0), 0);
+
+  document.getElementById('etfKpiGrid').innerHTML = [
+    { label: 'Total Invertido',    value: totalInvertido,  clr: '#6366f1' },
+    { label: 'Recuperado (neto)',  value: totalVentaNeto,  clr: '#10b981' },
+    { label: 'Ganancia s/IRPF',   value: totalGanSinIRPF, clr: '#10b981' },
+    { label: 'IRPF pagado',        value: totalIRPF,       clr: '#f43f5e' },
+  ].map(k => `
+    <div class="kpi-card" style="--accent-clr:${k.clr}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value" title="${fmt(k.value)}">${fmtShort(k.value)}</div>
+    </div>`).join('');
+}
+
+// ── ETF Ventas cards ──────────────────────────────────────────────────────
+function renderEtfVentasTable() {
+  renderEtfKpis();
+
+  const container = document.getElementById('etfVentasCards');
+  if (!etfVentas.length) {
+    container.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted)">Sin ventas registradas</div>`;
+    return;
+  }
+
+  container.innerHTML = etfVentas.map(r => {
+    const ganancia = r.ganancia_con_irpf ?? r.ganancia_sin_irpf;
+    const ganColor = ganancia > 0 ? 'var(--green)' : ganancia < 0 ? 'var(--red)' : 'var(--muted)';
+    const ganSign  = ganancia > 0 ? '+' : '';
+
+    return `
+    <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;transition:border-color .15s"
+         onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+
+        <!-- Nombre + fecha -->
+        <div style="min-width:200px">
+          <div style="font-weight:700;font-size:14px;margin-bottom:3px">${r.etf}</div>
+          <div style="font-size:12px;color:var(--muted)">${r.fecha_venta || 'Sin fecha'}</div>
+        </div>
+
+        <!-- Datos de la operación -->
+        <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;flex:1">
+          ${r.coste_total ? `<div style="text-align:center">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Coste</div>
+            <div style="font-weight:600">${fmtE(r.coste_total)}</div>
+          </div>` : ''}
+          <div style="text-align:center">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Cantidad</div>
+            <div style="font-weight:600">${fmtN(r.cantidad, 4)}</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">P. Venta</div>
+            <div style="font-weight:600">${fmtN(r.precio_venta)}</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">V. Bruto</div>
+            <div style="font-weight:600">${fmtE(r.venta_bruto)}</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">V. Neto</div>
+            <div style="font-weight:600">${fmtE(r.venta_neto)}</div>
+          </div>
+          ${r.irpf ? `<div style="text-align:center">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">IRPF</div>
+            <div style="font-weight:600;color:var(--red)">-${fmtE(r.irpf)}</div>
+          </div>` : ''}
+        </div>
+
+        <!-- Ganancia + acciones -->
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="text-align:right">
+            ${r.ganancia_sin_irpf !== null ? `<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">s/IRPF</div>
+            <div style="font-size:16px;font-weight:800;color:${r.ganancia_sin_irpf >= 0 ? 'var(--green)' : 'var(--red)'}">${r.ganancia_sin_irpf >= 0 ? '+' : ''}${fmtE(r.ganancia_sin_irpf)}</div>` : ''}
+            ${r.ganancia_con_irpf !== null ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">c/IRPF: <strong style="color:${r.ganancia_con_irpf >= 0 ? 'var(--green)' : 'var(--red)'}">${r.ganancia_con_irpf >= 0 ? '+' : ''}${fmtE(r.ganancia_con_irpf)}</strong></div>` : ''}
+          </div>
+          <div class="td-actions">
+            <button class="btn btn-ghost btn-sm" onclick="openEditEtfVentaModal(${r.id})">✎</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteEtfVenta(${r.id})">✕</button>
+          </div>
+        </div>
+
+      </div>
+    </div>`;
+  }).join('');
+
+  // Totales row
+  const totalVNeto   = etfVentas.reduce((s,r) => s + (r.venta_neto || 0), 0);
+  const totalGanSin  = etfVentas.filter(r => r.ganancia_sin_irpf !== null).reduce((s,r) => s + r.ganancia_sin_irpf, 0);
+  const totalGanCon  = etfVentas.filter(r => r.ganancia_con_irpf !== null).reduce((s,r) => s + r.ganancia_con_irpf, 0);
+  const totalIRPF    = etfVentas.reduce((s,r) => s + (r.irpf || 0), 0);
+
+  document.getElementById('etfVentasTotals').innerHTML = `
+    <div class="ops-total-pill">Venta neta total: <span>${fmt(totalVNeto)}</span></div>
+    <div class="ops-total-pill ${totalGanSin >= 0 ? 'pos' : 'neg'}">Ganancia s/IRPF: <span>${totalGanSin >= 0 ? '+' : ''}${fmt(totalGanSin)}</span></div>
+    ${totalGanCon ? `<div class="ops-total-pill ${totalGanCon >= 0 ? 'pos' : 'neg'}">Ganancia c/IRPF: <span>${totalGanCon >= 0 ? '+' : ''}${fmt(totalGanCon)}</span></div>` : ''}
+    <div class="ops-total-pill neg">IRPF total: <span>-${fmt(totalIRPF)}</span></div>
+  `;
+}
+
+// ── Auto-cálculo totales y beneficio ─────────────────────────────────────
+function calcTotales() {
+  const titulos = parseFloat(document.getElementById('fa-titulos').value)         || 0;
+  const pc  = parseFloat(document.getElementById('fa-precio_compra').value)       || 0;
+  const cc  = parseFloat(document.getElementById('fa-comision_compra').value)     || 0;
+  const cdc = parseFloat(document.getElementById('fa-comision_divisa_c').value)   || 0;
+  const pv  = parseFloat(document.getElementById('fa-precio_venta').value)        || 0;
+  const cv  = parseFloat(document.getElementById('fa-comision_venta').value)      || 0;
+  const cdv = parseFloat(document.getElementById('fa-comision_divisa_v').value)   || 0;
+
+  const tc = (titulos && pc) ? titulos * pc + cc + cdc : null;
+  const tv = (titulos && pv) ? titulos * pv - cv - cdv : null;
+
+  setCalcSpan('fa-total_compra', tc, 'var(--accent2)');
+  setCalcSpan('fa-total_venta',  tv, 'var(--green)');
+
+  const b = (tc !== null || tv !== null) ? (tv || 0) - (tc || 0) : null;
+  setBeneficioSpan(b);
+}
+
+function setCalcSpan(id, value, color) {
+  const el = document.getElementById(id);
+  if (value !== null) {
+    el.textContent   = fmt(value);
+    el.style.color   = color;
+    el.dataset.value = value;
+  } else {
+    el.textContent   = '—';
+    el.style.color   = 'var(--muted)';
+    el.dataset.value = '';
+  }
+}
+
+// ── Accion CRUD ───────────────────────────────────────────────────────────
+let editAccionId = null;
+const accionFields = ['accion','fecha_compra','fecha_venta','titulos','precio_compra','comision_compra',
+  'precio_venta','comision_venta',
+  'precio_dolar_compra','comision_divisa_c','precio_dolar_venta','comision_divisa_v'];
+
+function resetCalcSpans() {
+  ['fa-total_compra','fa-total_venta'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = '—'; el.style.color = 'var(--muted)'; el.dataset.value = '';
+  });
+  resetBeneficioSpan();
+}
+function resetBeneficioSpan() {
+  const el = document.getElementById('fa-beneficio');
+  el.textContent = '—'; el.style.color = 'var(--muted)'; el.dataset.value = '';
+}
+function setBeneficioSpan(v) {
+  const el = document.getElementById('fa-beneficio');
+  if (v === null || v === undefined || v === '') { resetBeneficioSpan(); return; }
+  el.textContent = fmt(+v);
+  el.style.color = +v > 0 ? 'var(--green)' : +v < 0 ? 'var(--red)' : 'var(--text)';
+  el.dataset.value = v;
+}
+function openAccionModal() {
+  editAccionId = null;
+  document.getElementById('accionModalTitle').textContent = 'Añadir Operación';
+  accionFields.forEach(f => { const el = document.getElementById(`fa-${f}`); if (el) el.value = ''; });
+  resetCalcSpans();
+  document.getElementById('accionOverlay').classList.add('open');
+}
+function openEditAccionModal(id) {
+  const r = accionesOps.find(x => x.id === id); if (!r) return;
+  editAccionId = id;
+  document.getElementById('accionModalTitle').textContent = 'Editar Operación';
+  accionFields.forEach(f => { const el = document.getElementById(`fa-${f}`); if (el) el.value = r[f] ?? ''; });
+  setCalcSpan('fa-total_compra', r.total_compra, 'var(--accent2)');
+  setCalcSpan('fa-total_venta',  r.total_venta,  'var(--green)');
+  setBeneficioSpan(r.beneficio);
+  document.getElementById('accionOverlay').classList.add('open');
+}
+function closeAccionModal() { document.getElementById('accionOverlay').classList.remove('open'); }
+
+async function saveAccion() {
+  const payload = {};
+  accionFields.forEach(f => { const el = document.getElementById(`fa-${f}`); if (el) payload[f] = el.value; });
+  payload.total_compra = document.getElementById('fa-total_compra').dataset.value || null;
+  payload.total_venta  = document.getElementById('fa-total_venta').dataset.value  || null;
+  payload.beneficio    = document.getElementById('fa-beneficio').dataset.value    || null;
+  if (!payload.accion) { toast('El nombre de la acción es obligatorio', 'error'); return; }
+  const url = editAccionId ? `/api/acciones/${editAccionId}` : '/api/acciones';
+  const res = await fetch(url, { method: editAccionId ? 'PUT' : 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  if (!res.ok) { toast('Error al guardar', 'error'); return; }
+  toast(editAccionId ? 'Operación actualizada' : 'Operación añadida');
+  closeAccionModal();
+  await loadOperaciones(); renderAccionesGroups();
+}
+async function deleteAccion(id) {
+  if (!confirm('¿Eliminar esta operación?')) return;
+  await fetch(`/api/acciones/${id}`, { method: 'DELETE' });
+  toast('Operación eliminada');
+  await loadOperaciones(); renderAccionesGroups();
+}
+
+// ── Dividendo CRUD ────────────────────────────────────────────────────────
+let editDividendoId = null;
+const divFields = ['accion','fecha','euros_accion','bruto','neto'];
+
+function openDividendoModal() {
+  editDividendoId = null;
+  document.getElementById('dividendoModalTitle').textContent = 'Añadir Dividendo';
+  divFields.forEach(f => { document.getElementById(`fd-${f}`).value = ''; });
+  document.getElementById('dividendoOverlay').classList.add('open');
+}
+function openEditDividendoModal(id) {
+  const r = dividendos.find(x => x.id === id); if (!r) return;
+  editDividendoId = id;
+  document.getElementById('dividendoModalTitle').textContent = 'Editar Dividendo';
+  divFields.forEach(f => { document.getElementById(`fd-${f}`).value = r[f] ?? ''; });
+  document.getElementById('dividendoOverlay').classList.add('open');
+}
+function closeDividendoModal() { document.getElementById('dividendoOverlay').classList.remove('open'); }
+
+async function saveDividendo() {
+  const payload = {};
+  divFields.forEach(f => { payload[f] = document.getElementById(`fd-${f}`).value; });
+  if (!payload.accion) { toast('El nombre de la acción es obligatorio', 'error'); return; }
+  const url = editDividendoId ? `/api/dividendos/${editDividendoId}` : '/api/dividendos';
+  const res = await fetch(url, { method: editDividendoId ? 'PUT' : 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  if (!res.ok) { toast('Error al guardar', 'error'); return; }
+  toast(editDividendoId ? 'Dividendo actualizado' : 'Dividendo añadido');
+  closeDividendoModal();
+  await loadOperaciones(); renderDividendosTable();
+}
+async function deleteDividendo(id) {
+  if (!confirm('¿Eliminar este dividendo?')) return;
+  await fetch(`/api/dividendos/${id}`, { method: 'DELETE' });
+  toast('Dividendo eliminado');
+  await loadOperaciones(); renderDividendosTable();
+}
+
+// ── Catálogo de fondos ────────────────────────────────────────────────────
+let fondosCatalogo = [];
+
+async function loadFondosCatalogo() {
+  fondosCatalogo = await fetch('/api/fondos-catalogo').then(r => r.json());
+}
+
+function renderFondoCatalogoList() {
+  const el = document.getElementById('fondoCatalogoList');
+  if (!fondosCatalogo.length) {
+    el.innerHTML = `<div style="padding:20px 22px;color:var(--muted);font-size:13px">
+      Sin fondos registrados. Añade los fondos de tu cartera para poder seleccionarlos al registrar compras.
+    </div>`;
+    return;
+  }
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <thead><tr>
+      <th style="padding:10px 22px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border2)">Fondo</th>
+      <th style="padding:10px 22px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border2)">ISIN</th>
+      <th style="border-bottom:1px solid var(--border2)"></th>
+    </tr></thead>
+    <tbody>
+    ${fondosCatalogo.map(f => `
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:12px 22px;font-weight:600">${f.nombre}</td>
+        <td style="padding:12px 22px;font-family:monospace;font-size:13px;color:var(--accent2)">${f.isin || '—'}</td>
+        <td style="padding:12px 22px">
+          <div style="display:flex;gap:6px;justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm" onclick="openEditFondoCatalogoModal(${f.id})">✎</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteFondoCatalogo(${f.id})">✕</button>
+          </div>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function populateFondoSelect(selectedEtf) {
+  const sel = document.getElementById('fec-select');
+  sel.innerHTML = `<option value="">— Selecciona un fondo —</option>
+    ${fondosCatalogo.map(f =>
+      `<option value="${f.id}" data-nombre="${f.nombre}" data-isin="${f.isin||''}" ${selectedEtf===f.nombre?'selected':''}>
+        ${f.nombre}${f.isin ? ' · ' + f.isin : ''}
+      </option>`
+    ).join('')}`;
+}
+
+function onFondoSelect() {
+  const sel  = document.getElementById('fec-select');
+  const opt  = sel.options[sel.selectedIndex];
+  const isinEl = document.getElementById('fec-isin');
+  const etfEl  = document.getElementById('fec-etf');
+  if (opt.value) {
+    etfEl.value  = opt.dataset.nombre;
+    isinEl.value = opt.dataset.isin;
+  } else {
+    etfEl.value  = '';
+    isinEl.value = '';
+  }
+}
+
+let editFondoCatalogoId = null;
+
+function openFondoCatalogoModal() {
+  editFondoCatalogoId = null;
+  document.getElementById('fondoCatalogoModalTitle').textContent = 'Añadir fondo a la cartera';
+  document.getElementById('fc-nombre').value = '';
+  document.getElementById('fc-isin').value   = '';
+  document.getElementById('fondoCatalogoOverlay').classList.add('open');
+}
+function openEditFondoCatalogoModal(id) {
+  const f = fondosCatalogo.find(x => x.id === id); if (!f) return;
+  editFondoCatalogoId = id;
+  document.getElementById('fondoCatalogoModalTitle').textContent = 'Editar fondo';
+  document.getElementById('fc-nombre').value = f.nombre;
+  document.getElementById('fc-isin').value   = f.isin || '';
+  document.getElementById('fondoCatalogoOverlay').classList.add('open');
+}
+function closeFondoCatalogoModal() { document.getElementById('fondoCatalogoOverlay').classList.remove('open'); }
+
+async function saveFondoCatalogo() {
+  const nombre = document.getElementById('fc-nombre').value.trim();
+  const isin   = document.getElementById('fc-isin').value.trim();
+  if (!nombre) { toast('El nombre es obligatorio', 'error'); return; }
+  const url    = editFondoCatalogoId ? `/api/fondos-catalogo/${editFondoCatalogoId}` : '/api/fondos-catalogo';
+  const method = editFondoCatalogoId ? 'PUT' : 'POST';
+  const res = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify({ nombre, isin }) });
+  if (!res.ok) { toast('Error al guardar', 'error'); return; }
+  toast(editFondoCatalogoId ? 'Fondo actualizado' : 'Fondo añadido a la cartera');
+  closeFondoCatalogoModal();
+  await loadFondosCatalogo();
+  renderFondoCatalogoList();
+  populateFondoSelect();
+}
+async function deleteFondoCatalogo(id) {
+  if (!confirm('¿Eliminar este fondo del catálogo?')) return;
+  await fetch(`/api/fondos-catalogo/${id}`, { method: 'DELETE' });
+  toast('Fondo eliminado del catálogo');
+  await loadFondosCatalogo();
+  renderFondoCatalogoList();
+  populateFondoSelect();
+}
+
+// ── ETF Compra CRUD ───────────────────────────────────────────────────────
+let editEtfCompraId = null;
+// importe = inputs (precio, titulos, comision son inputs; importe es span)
+const etfCFields = ['etf','isin','fecha_compra','precio','titulos','comision'];
+
+function calcEtfImporte() {
+  const p  = parseFloat(document.getElementById('fec-precio').value)    || 0;
+  const t  = parseFloat(document.getElementById('fec-titulos').value)   || 0;
+  const c  = parseFloat(document.getElementById('fec-comision').value)  || 0;
+  const el = document.getElementById('fec-importe');
+  if (p && t) {
+    const v = p * t + c;
+    el.textContent   = fmt(v);
+    el.dataset.value = v;
+  } else {
+    el.textContent   = '—';
+    el.dataset.value = '';
+  }
+}
+
+function resetEtfCompraModal() {
+  populateFondoSelect();
+  etfCFields.filter(f => f !== 'etf' && f !== 'isin').forEach(f => {
+    const el = document.getElementById(`fec-${f}`); if (el) el.value = '';
+  });
+  document.getElementById('fec-etf').value  = '';
+  document.getElementById('fec-isin').value = '';
+  const imp = document.getElementById('fec-importe'); imp.textContent = '—'; imp.dataset.value = '';
+}
+function openEtfCompraModal() {
+  editEtfCompraId = null;
+  document.getElementById('etfCompraModalTitle').textContent = 'Registrar compra';
+  resetEtfCompraModal();
+  document.getElementById('etfCompraOverlay').classList.add('open');
+}
+function openEditEtfCompraModal(id) {
+  const r = etfCompras.find(x => x.id === id); if (!r) return;
+  editEtfCompraId = id;
+  document.getElementById('etfCompraModalTitle').textContent = 'Editar compra';
+  resetEtfCompraModal();
+  // Seleccionar fondo en el dropdown si existe en catálogo
+  const match = fondosCatalogo.find(f => f.nombre === r.etf);
+  const sel = document.getElementById('fec-select');
+  if (match) {
+    sel.value = match.id;
+    document.getElementById('fec-isin').value = match.isin || '';
+  }
+  document.getElementById('fec-etf').value        = r.etf  || '';
+  document.getElementById('fec-fecha_compra').value = r.fecha_compra || '';
+  document.getElementById('fec-precio').value      = r.precio   ?? '';
+  document.getElementById('fec-titulos').value     = r.titulos  ?? '';
+  document.getElementById('fec-comision').value    = r.comision ?? '';
+  const imp = document.getElementById('fec-importe');
+  if (r.importe) { imp.textContent = fmt(r.importe); imp.dataset.value = r.importe; }
+  else calcEtfImporte();
+  document.getElementById('etfCompraOverlay').classList.add('open');
+}
+function closeEtfCompraModal() { document.getElementById('etfCompraOverlay').classList.remove('open'); }
+
+async function saveEtfCompra() {
+  const payload = {};
+  etfCFields.filter(f => f !== 'etf' && f !== 'isin').forEach(f => {
+    const el = document.getElementById(`fec-${f}`); if (el) payload[f] = el.value;
+  });
+  // Nombre: del campo oculto que se rellenó con el select
+  payload.etf  = document.getElementById('fec-etf').value.trim();
+  payload.isin = document.getElementById('fec-isin').value.trim();
+  payload.importe = document.getElementById('fec-importe').dataset.value || null;
+  if (!payload.etf) { toast('Selecciona un fondo antes de guardar', 'error'); return; }
+  const url = editEtfCompraId ? `/api/etf-compras/${editEtfCompraId}` : '/api/etf-compras';
+  const res = await fetch(url, { method: editEtfCompraId ? 'PUT' : 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  if (!res.ok) { toast('Error al guardar', 'error'); return; }
+  toast(editEtfCompraId ? 'Compra actualizada' : 'Compra añadida');
+  closeEtfCompraModal();
+  await loadOperaciones(); renderEtfComprasGroups();
+}
+async function deleteEtfCompra(id) {
+  if (!confirm('¿Eliminar esta compra?')) return;
+  await fetch(`/api/etf-compras/${id}`, { method: 'DELETE' });
+  toast('Compra eliminada');
+  await loadOperaciones(); renderEtfComprasGroups();
+}
+
+// ── ETF Venta CRUD ────────────────────────────────────────────────────────
+let editEtfVentaId = null;
+const etfVFields = ['etf','fecha_venta','coste_total','comision_compra','cantidad','precio_venta',
+  'venta_bruto','venta_neto','comision_venta','irpf','ganancia_sin_irpf','ganancia_con_irpf'];
+
+function openEtfVentaModal() {
+  editEtfVentaId = null;
+  document.getElementById('etfVentaModalTitle').textContent = 'Añadir Venta de Fondo';
+  etfVFields.forEach(f => { document.getElementById(`fev-${f}`).value = ''; });
+  document.getElementById('etfVentaOverlay').classList.add('open');
+}
+function openEditEtfVentaModal(id) {
+  const r = etfVentas.find(x => x.id === id); if (!r) return;
+  editEtfVentaId = id;
+  document.getElementById('etfVentaModalTitle').textContent = 'Editar Venta de Fondo';
+  etfVFields.forEach(f => { document.getElementById(`fev-${f}`).value = r[f] ?? ''; });
+  document.getElementById('etfVentaOverlay').classList.add('open');
+}
+function closeEtfVentaModal() { document.getElementById('etfVentaOverlay').classList.remove('open'); }
+
+async function saveEtfVenta() {
+  const payload = {};
+  etfVFields.forEach(f => { payload[f] = document.getElementById(`fev-${f}`).value; });
+  if (!payload.etf) { toast('El nombre del ETF es obligatorio', 'error'); return; }
+  const url = editEtfVentaId ? `/api/etf-ventas/${editEtfVentaId}` : '/api/etf-ventas';
+  const res = await fetch(url, { method: editEtfVentaId ? 'PUT' : 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  if (!res.ok) { toast('Error al guardar', 'error'); return; }
+  toast(editEtfVentaId ? 'Venta actualizada' : 'Venta añadida');
+  closeEtfVentaModal();
+  await loadOperaciones(); renderEtfVentasTable();
+}
+async function deleteEtfVenta(id) {
+  if (!confirm('¿Eliminar esta venta?')) return;
+  await fetch(`/api/etf-ventas/${id}`, { method: 'DELETE' });
+  toast('Venta eliminada');
+  await loadOperaciones(); renderEtfVentasTable();
+}
+
+// ── Renta ────────────────────────────────────────────────────────────────
+function initRentaSelector() {
+  const sel = document.getElementById('rentaAño');
+  if (!sel || sel.options.length > 0) return;
+  const currentYear = new Date().getFullYear();
+  for (let y = currentYear; y >= 2020; y--) {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    sel.appendChild(opt);
+  }
+}
+async function descargarRenta() {
+  const año = document.getElementById('rentaAño').value;
+  const btn = document.getElementById('rentaBtn');
+  const msg = document.getElementById('rentaMsg');
+  btn.disabled = true; btn.textContent = '⏳ Generando…';
+  msg.textContent = 'Generando PDF, puede tardar unos segundos…';
+  try {
+    const res = await fetch(`/api/renta/${año}`);
+    if (!res.ok) {
+      const err = await res.json();
+      msg.textContent = 'Error: ' + (err.error || 'desconocido');
+      return;
+    }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `informe-renta-${año}.pdf`;
+    a.click(); URL.revokeObjectURL(url);
+    msg.textContent = `PDF generado correctamente para el ejercicio ${año}.`;
+  } catch(e) {
+    msg.textContent = 'Error al generar el PDF.';
+  } finally {
+    btn.disabled = false; btn.textContent = '📥 Generar PDF';
+  }
+}
+
+// ── Backup ───────────────────────────────────────────────────────────────
+async function renderBackup() {
+  // Cargar credenciales guardadas
+  const cfg = await fetch('/api/config').then(r=>r.json());
+  if (cfg.drive_client_id)     document.getElementById('driveClientId').value     = cfg.drive_client_id;
+  if (cfg.drive_client_secret) document.getElementById('driveClientSecret').value = '••••••••';
+  const status = await fetch('/api/drive/status').then(r=>r.json());
+  updateDriveUI(status);
+  if (status.authorized) loadDriveFiles();
+}
+
+function updateDriveUI(status) {
+  const badge    = document.getElementById('driveStatusBadge');
+  const setup    = document.getElementById('driveSetupSection');
+  const authSec  = document.getElementById('driveAuthSection');
+  const uploadSec= document.getElementById('driveUploadSection');
+  const lastBk   = document.getElementById('driveLastBackup');
+
+  if (!status.configured) {
+    badge.innerHTML = `<span class="badge badge-neu">Sin configurar</span>`;
+    setup.style.display = ''; authSec.style.display = 'none'; uploadSec.style.display = 'none';
+  } else if (!status.authorized) {
+    badge.innerHTML = `<span class="badge badge-neu">No autorizado</span>`;
+    setup.style.display = ''; authSec.style.display = ''; uploadSec.style.display = 'none';
+  } else {
+    badge.innerHTML = `<span class="badge badge-pos">✓ Conectado</span>`;
+    setup.style.display = 'none'; authSec.style.display = 'none'; uploadSec.style.display = '';
+    if (status.last_backup) {
+      const d = new Date(status.last_backup);
+      lastBk.textContent = `Último backup: ${d.toLocaleDateString('es-ES')} a las ${d.toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit'})}`;
+    } else {
+      lastBk.textContent = 'Aún no se ha realizado ningún backup en Drive.';
+    }
+  }
+}
+
+async function saveDriveCredentials() {
+  const id  = document.getElementById('driveClientId').value.trim();
+  const sec = document.getElementById('driveClientSecret').value.trim();
+  if (!id || !sec || sec === '••••••••') { toast('Introduce Client ID y Client Secret', 'error'); return; }
+  await fetch('/api/config', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({key:'drive_client_id', value:id}) });
+  await fetch('/api/config', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({key:'drive_client_secret', value:sec}) });
+  toast('Credenciales guardadas');
+  const status = await fetch('/api/drive/status').then(r=>r.json());
+  updateDriveUI(status);
+}
+
+async function authorizeDrive() {
+  const res = await fetch('/api/drive/auth-url').then(r=>r.json());
+  if (res.error) { toast(res.error, 'error'); return; }
+  window.open(res.url, '_blank', 'width=500,height=600');
+  // Poll hasta que se autorice
+  const interval = setInterval(async () => {
+    const s = await fetch('/api/drive/status').then(r=>r.json());
+    if (s.authorized) { clearInterval(interval); updateDriveUI(s); toast('Google Drive conectado ✓'); }
+  }, 2000);
+  setTimeout(() => clearInterval(interval), 120000);
+}
+
+async function uploadToDrive() {
+  const btn = document.getElementById('driveUploadBtn');
+  btn.disabled = true; btn.textContent = '⏳ Subiendo…';
+  const res = await fetch('/api/drive/upload', { method:'POST' }).then(r=>r.json());
+  btn.disabled = false; btn.textContent = '☁ Subir backup a Drive';
+  if (res.error) { toast(res.error, 'error'); return; }
+  toast('Backup subido a Google Drive ✓');
+  const status = await fetch('/api/drive/status').then(r=>r.json());
+  updateDriveUI(status);
+  loadDriveFiles();
+}
+
+async function loadDriveFiles() {
+  const container = document.getElementById('driveFileList');
+  if (!container) return;
+  const files = await fetch('/api/drive/files').then(r=>r.json());
+  if (!files.length) { container.innerHTML = ''; return; }
+  container.innerHTML = `
+    <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Backups en Drive:</div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      ${files.map(f => {
+        const d = new Date(f.createdTime);
+        const label = d.toLocaleDateString('es-ES') + ' ' + d.toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+        const kb = f.size ? Math.round(f.size/1024) + ' KB' : '';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.04);border-radius:6px;padding:6px 10px;font-size:12px">
+          <span>${label}${kb ? ' <span style="color:var(--muted)">· ' + kb + '</span>' : ''}</span>
+          <a href="/api/drive/download/${f.id}" download="${f.name}" style="color:var(--accent);text-decoration:none;font-size:11px;margin-left:8px;white-space:nowrap">⬇ Descargar</a>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+async function disconnectDrive() {
+  if (!confirm('¿Desconectar Google Drive? Se eliminarán los tokens de acceso.')) return;
+  await fetch('/api/drive/disconnect', { method:'POST' });
+  toast('Google Drive desconectado');
+  const status = await fetch('/api/drive/status').then(r=>r.json());
+  updateDriveUI(status);
+}
+
+async function restoreBackup() {
+  const file = document.getElementById('restoreFile').files[0];
+  const msg  = document.getElementById('restoreMsg');
+  if (!file) { msg.textContent = 'Selecciona un archivo primero.'; msg.style.color='var(--red)'; return; }
+  if (!confirm('⚠️ Esto reemplazará TODOS tus datos actuales. ¿Estás seguro?')) return;
+  const form = new FormData(); form.append('file', file);
+  msg.textContent = 'Restaurando…'; msg.style.color='var(--muted)';
+  const res = await fetch('/api/backup/restore', { method:'POST', body:form }).then(r=>r.json());
+  if (res.error) { msg.textContent = res.error; msg.style.color='var(--red)'; }
+  else { msg.textContent = '✅ ' + res.message; msg.style.color='var(--green)'; }
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────
+// ── Auth ──────────────────────────────────────────────────────────────────────
+let currentUser = null;
+
+async function logout() {
+  await fetch('/api/auth/logout', { method: 'POST' });
+  window.location.href = '/login.html';
+}
+
+// ── Gastos ────────────────────────────────────────────────────────────────────
+let gastosData = [];
+let editGastoId = null;
+
+const CAT_META = {
+  'Vivienda':      { icon: '🏠', bg: 'rgba(99,102,241,.15)' },
+  'Alimentación':  { icon: '🛒', bg: 'rgba(16,185,129,.15)' },
+  'Transporte':    { icon: '🚗', bg: 'rgba(245,158,11,.15)' },
+  'Suscripciones': { icon: '📱', bg: 'rgba(139,92,246,.15)' },
+  'Salud':         { icon: '💊', bg: 'rgba(20,184,166,.15)'  },
+  'Ocio':          { icon: '🎮', bg: 'rgba(244,63,94,.15)'   },
+  'Otros':         { icon: '📦', bg: 'rgba(107,107,138,.15)' },
+};
+const CAT_ORDER = ['Vivienda','Alimentación','Transporte','Suscripciones','Salud','Ocio','Otros'];
+
+async function loadGastos() {
+  gastosData = await fetch('/api/gastos').then(r => r.json());
+}
+
+async function renderGastos() {
+  await loadGastos();
+
+  const ingreso = parseFloat(config.ingreso_mensual) || 0;
+  const total   = gastosData.reduce((s, g) => s + (g.importe || 0), 0);
+  const libre   = ingreso - total;
+  const pct     = ingreso > 0 ? (total / ingreso * 100).toFixed(1) : null;
+  const librePct= ingreso > 0 ? (libre / ingreso * 100).toFixed(1) : null;
+
+  document.getElementById('gkpi-ingreso').textContent = ingreso ? fmt(ingreso) : '—';
+  document.getElementById('ingreso-input').value = ingreso || '';
+
+  document.getElementById('gkpi-total').textContent = fmt(total);
+  document.getElementById('gkpi-pct').textContent   = pct ? `${pct}% del ingreso` : 'sin ingreso definido';
+
+  const libreEl = document.getElementById('gkpi-libre');
+  libreEl.textContent = ingreso ? fmt(libre) : '—';
+  libreEl.className   = 'gastos-kpi-value' + (libre >= 0 ? ' green' : ' red');
+  document.getElementById('gkpi-libre-pct').textContent = librePct ? `${librePct}% del ingreso libre` : 'tras restar gastos fijos';
+
+  // Group by category
+  const bycat = {};
+  for (const cat of CAT_ORDER) bycat[cat] = [];
+  for (const g of gastosData) {
+    if (!bycat[g.categoria]) bycat[g.categoria] = [];
+    bycat[g.categoria].push(g);
+  }
+
+  const grid = document.getElementById('gastosGrid');
+  grid.innerHTML = CAT_ORDER.map(cat => {
+    const items = bycat[cat] || [];
+    const meta  = CAT_META[cat] || { icon: '📦', bg: 'rgba(107,107,138,.15)' };
+    const catTotal = items.reduce((s, g) => s + (g.importe || 0), 0);
+    return `
+      <div class="cat-card">
+        <div class="cat-card-header">
+          <div class="cat-card-title">
+            <div class="cat-icon" style="--cat-bg:${meta.bg}">${meta.icon}</div>
+            <span>${cat}</span>
+          </div>
+          <span class="cat-total">${items.length ? fmt(catTotal) : ''}</span>
+        </div>
+        <div class="cat-items">
+          ${items.length ? items.map(g => `
+            <div class="cat-item">
+              <span class="cat-item-name">${g.nombre}</span>
+              <div style="display:flex;align-items:center;gap:0">
+                <span class="cat-item-amount">${fmt(g.importe)}</span>
+                <div class="cat-item-actions">
+                  <button class="btn btn-ghost btn-sm btn-icon" title="Editar" onclick="openEditGastoModal(${g.id})" style="padding:4px 7px;font-size:12px">✎</button>
+                  <button class="btn btn-danger btn-sm btn-icon" title="Eliminar" onclick="deleteGasto(${g.id})" style="padding:4px 7px;font-size:12px">✕</button>
+                </div>
+              </div>
+            </div>`).join('') : `<div class="cat-empty">Sin gastos en esta categoría</div>`}
+        </div>
+        <div class="gastos-add-row">
+          <input type="text" placeholder="Nombre del gasto" id="quick-nombre-${cat}" style="flex:2">
+          <input type="number" placeholder="€" id="quick-importe-${cat}" step="any" min="0" style="flex:1;min-width:70px"
+            onkeydown="if(event.key==='Enter')quickAddGasto('${cat}')">
+          <button class="btn btn-ghost btn-sm" onclick="quickAddGasto('${cat}')">+ Añadir</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function quickAddGasto(cat) {
+  const nombre  = document.getElementById(`quick-nombre-${cat}`).value.trim();
+  const importe = parseFloat(document.getElementById(`quick-importe-${cat}`).value) || 0;
+  if (!nombre) { toast('Escribe el nombre del gasto', 'error'); return; }
+  await fetch('/api/gastos', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nombre, importe, categoria: cat }),
+  });
+  toast('Gasto añadido');
+  renderGastos();
+}
+
+async function saveIngreso() {
+  const val = parseFloat(document.getElementById('ingreso-input').value) || 0;
+  await fetch('/api/config', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key: 'ingreso_mensual', value: String(val) }),
+  });
+  config.ingreso_mensual = String(val);
+  toast('Ingreso guardado');
+  renderGastos();
+}
+
+function openGastoModal() {
+  editGastoId = null;
+  document.getElementById('gastoModalTitle').textContent = 'Añadir gasto';
+  document.getElementById('fg-nombre').value    = '';
+  document.getElementById('fg-importe').value   = '';
+  document.getElementById('fg-categoria').value = 'Otros';
+  document.getElementById('gastoOverlay').classList.add('open');
+}
+function openEditGastoModal(id) {
+  const g = gastosData.find(x => x.id === id); if (!g) return;
+  editGastoId = id;
+  document.getElementById('gastoModalTitle').textContent = 'Editar gasto';
+  document.getElementById('fg-nombre').value    = g.nombre;
+  document.getElementById('fg-importe').value   = g.importe;
+  document.getElementById('fg-categoria').value = g.categoria;
+  document.getElementById('gastoOverlay').classList.add('open');
+}
+function closeGastoModal() { document.getElementById('gastoOverlay').classList.remove('open'); }
+
+async function saveGasto() {
+  const nombre    = document.getElementById('fg-nombre').value.trim();
+  const importe   = parseFloat(document.getElementById('fg-importe').value) || 0;
+  const categoria = document.getElementById('fg-categoria').value;
+  if (!nombre) { toast('El nombre es obligatorio', 'error'); return; }
+  const url    = editGastoId ? `/api/gastos/${editGastoId}` : '/api/gastos';
+  const method = editGastoId ? 'PUT' : 'POST';
+  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre, importe, categoria }) });
+  if (!res.ok) { toast('Error al guardar', 'error'); return; }
+  toast(editGastoId ? 'Gasto actualizado' : 'Gasto añadido');
+  closeGastoModal();
+  renderGastos();
+}
+async function deleteGasto(id) {
+  if (!confirm('¿Eliminar este gasto?')) return;
+  await fetch(`/api/gastos/${id}`, { method: 'DELETE' });
+  toast('Gasto eliminado');
+  renderGastos();
+}
+
+// ── Admin ─────────────────────────────────────────────────────────────────────
+const SECTION_LABELS = {
+  dashboard:    'Dashboard',
+  snapshots:    'Snapshots',
+  objetivo:     'Objetivo',
+  estadisticas: 'Estadísticas',
+  operaciones:  'Operaciones',
+  backup:       'Copia de seguridad',
+  gastos:       'Gastos',
+};
+
+async function renderAdmin() {
+  const users = await fetch('/api/admin/users').then(r => r.json());
+  const container = document.getElementById('adminUserList');
+  container.innerHTML = users.map(u => `
+    <div style="border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <span style="font-weight:700;font-size:15px">${u.username}</span>
+          ${u.is_admin ? '<span style="margin-left:8px;font-size:11px;background:rgba(99,102,241,.2);color:#818cf8;padding:2px 8px;border-radius:20px">Admin</span>' : ''}
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="changePassword(${u.id}, '${u.username}')">🔑 Cambiar contraseña</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Secciones visibles</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${Object.entries(SECTION_LABELS).map(([key, label]) => {
+          const checked = (u.permissions || []).includes(key);
+          const disabled = u.is_admin ? 'disabled' : '';
+          return `<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:${u.is_admin ? 'default' : 'pointer'};opacity:${u.is_admin ? '.5' : '1'}">
+            <input type="checkbox" ${checked ? 'checked' : ''} ${disabled}
+              onchange="togglePermission(${u.id}, '${key}', this.checked)"
+              style="accent-color:#6366f1;width:15px;height:15px">
+            ${label}
+          </label>`;
+        }).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function togglePermission(userId, section, enabled) {
+  const users = await fetch('/api/admin/users').then(r => r.json());
+  const user  = users.find(u => u.id === userId);
+  let perms   = [...(user.permissions || [])];
+  if (enabled && !perms.includes(section)) perms.push(section);
+  if (!enabled) perms = perms.filter(p => p !== section);
+  await fetch(`/api/admin/users/${userId}/permissions`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ permissions: perms }),
+  });
+  toast('Permisos actualizados');
+}
+
+async function changePassword(userId, username) {
+  const pwd = prompt(`Nueva contraseña para "${username}":`);
+  if (!pwd) return;
+  const res = await fetch(`/api/admin/users/${userId}/password`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pwd }),
+  });
+  if (res.ok) toast('Contraseña actualizada');
+  else toast('Error al cambiar contraseña', 'error');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  // Verificar sesión y aplicar permisos
+  const me = await fetch('/api/auth/me').then(r => r.ok ? r.json() : null);
+  if (!me) { window.location.href = '/login.html'; return; }
+  currentUser = me;
+
+  // Mostrar usuario en sidebar
+  document.getElementById('sidebarUser').textContent = `👤 ${me.username}`;
+
+  // Mostrar/ocultar nav items según permisos
+  document.querySelectorAll('.nav-item[data-section]').forEach(el => {
+    const sec = el.dataset.section;
+    if (sec === 'admin') {
+      el.style.display = me.isAdmin ? '' : 'none';
+    } else {
+      el.style.display = (me.permissions || []).includes(sec) ? '' : 'none';
+    }
+  });
+
+  // Navegar a la primera sección permitida
+  const firstAllowed = me.permissions?.[0] || 'dashboard';
+  const firstNav = document.querySelector(`.nav-item[data-section="${firstAllowed}"]`);
+  if (firstNav) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    firstNav.classList.add('active');
+    const sec = document.getElementById(`sec-${firstAllowed}`);
+    if (sec) sec.classList.add('active');
+  }
+
+  await Promise.all([loadSnapshots(), loadConfig(), loadOperaciones()]);
+  renderDashboard();
+  renderSnapshotsTable();
+  renderObjetivo();
+
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const name = el.dataset.section;
+      if (name === 'snapshots')   renderSnapshotsTable();
+      if (name === 'objetivo')    renderObjetivo();
+      if (name === 'operaciones') renderOperaciones();
+      if (name === 'backup')      { renderBackup(); initRentaSelector(); }
+      if (name === 'gastos')      renderGastos();
+      if (name === 'admin')       renderAdmin();
+    });
+  });
+}
+
+init();
+</script>
+</body>
+</html>
+
+
+

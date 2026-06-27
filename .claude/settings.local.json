@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem \"C:\\\\Projects\\\\MySaver\" -ErrorAction SilentlyContinue; if \\(-not \\(Test-Path \"C:\\\\Projects\\\\MySaver\"\\)\\) { New-Item -ItemType Directory -Force \"C:\\\\Projects\\\\MySaver\" })",
+      "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Projects\\\\MySaver\\\\public\")",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Read(//c/Users/Pepe4/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/c91e0900-71ee-47a9-9d54-53b2b430769d/fde6c396-5ca0-429a-8f6f-76822a8b08ef/skills/xlsx/**)",
+      "Bash(python -)",
+      "PowerShell(Invoke-RestMethod http://localhost:3000/api/etf-compras | ForEach-Object { $_ | Select-Object etf, fecha_compra, importe, precio, titulos, comision } | Format-Table -AutoSize)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "PowerShell(Start-Process -FilePath \"node\" -ArgumentList \"server.js\" -WorkingDirectory \"C:\\\\Projects\\\\MySaver\" -WindowStyle Hidden -PassThru)",
+      "PowerShell(Start-Sleep -Seconds 2; Invoke-WebRequest -Uri \"http://localhost:3000/api/renta/2025\" -OutFile \"C:\\\\Projects\\\\MySaver\\\\tmp\\\\test-renta.pdf\" -UseBasicParsing; Write-Host \"OK - $\\(Get-Item 'C:\\\\Projects\\\\MySaver\\\\tmp\\\\test-renta.pdf' | Select-Object -ExpandProperty Length\\) bytes\")",
+      "PowerShell(cd C:\\\\Projects\\\\MySaver; $env:DATABASE_URL=\"postgresql://neondb_owner:npg_Qp9evrc5qOEj@ep-silent-shadow-asgfp7h0.c-4.eu-central-1.aws.neon.tech/neondb?sslmode=require\"; Start-Process -FilePath \"node\" -ArgumentList \"server.js\" -WorkingDirectory \"C:\\\\Projects\\\\MySaver\" -WindowStyle Hidden -PassThru | Select-Object Id)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s -c /tmp/cookies.txt -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"pepe\",\"password\":\"admin123\"}')",
+      "Bash(curl -s -b /tmp/cookies.txt http://localhost:3000/api/gastos)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_Qp9evrc5qOEj@ep-silent-shadow-asgfp7h0.c-4.eu-central-1.aws.neon.tech/neondb?sslmode=require\" node server.js)",
+      "Bash(echo \"Started PID $!\")",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(curl -s -b /tmp/cookies.txt -X POST http://localhost:3000/api/gastos -H \"Content-Type: application/json\" -d '{\"nombre\":\"Alquiler\",\"importe\":850,\"categoria\":\"Vivienda\"}')",
+      "Bash(curl -s -b /tmp/cookies.txt -X DELETE http://localhost:3000/api/gastos/1)",
+      "Bash(curl -s -b /tmp/cookies.txt -X PUT http://localhost:3000/api/admin/users/1/permissions -H \"Content-Type: application/json\" -d '{\"permissions\":[\"dashboard\",\"snapshots\",\"objetivo\",\"estadisticas\",\"operaciones\",\"backup\",\"gastos\"]}')",
+      "Bash(cat /tmp/server.log)",
+      "Bash(git rm *)",
+      "Bash(git add *)"
+    ]
+  }
+}
