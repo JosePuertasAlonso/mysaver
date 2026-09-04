@@ -780,6 +780,17 @@ select option:checked { background: var(--accent); }
           <!-- KPIs fondos -->
           <div class="kpi-grid" id="etfKpiGrid" style="margin-bottom:24px"></div>
 
+          <!-- Distribución por fondo -->
+          <div class="card" style="margin-bottom:24px">
+            <div class="card-header"><span class="card-title">Distribución por fondo</span></div>
+            <div class="card-body">
+              <div class="chart-wrap" style="height:280px">
+                <canvas id="chartFondos"></canvas>
+              </div>
+              <div id="chartFondosEmpty" style="display:none;text-align:center;padding:24px;color:var(--muted)">Sin posiciones abiertas en fondos</div>
+            </div>
+          </div>
+
           <!-- Catálogo de fondos -->
           <div class="card" style="margin-bottom:24px">
             <div class="card-header">
@@ -787,6 +798,12 @@ select option:checked { background: var(--accent); }
               <button class="btn btn-ghost btn-sm" onclick="openFondoCatalogoModal()">+ Añadir fondo</button>
             </div>
             <div id="fondoCatalogoList" style="padding:0"></div>
+          </div>
+
+          <!-- Traspasos -->
+          <div class="card" style="margin-bottom:28px">
+            <div class="card-header"><span class="card-title">Traspasos realizados</span></div>
+            <div id="traspasosList" style="padding:0"></div>
           </div>
 
           <!-- Ventas -->
@@ -1221,6 +1238,35 @@ select option:checked { background: var(--accent); }
   </div>
 </div>
 
+<!-- ── Modal Traspaso de fondo ───────────────────────────────────────────── -->
+<div class="overlay" id="traspasoOverlay" onclick="if(event.target===this)closeTraspasoModal()">
+  <div class="modal" style="width:440px">
+    <div class="modal-title">Traspasar fondo</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Fondo origen</label>
+        <input type="text" id="tr-origen" readonly
+          style="background:rgba(255,255,255,.03);cursor:default">
+      </div>
+      <div class="form-group full">
+        <label>Fondo destino</label>
+        <select id="tr-destino" style="background:rgba(255,255,255,.05);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;width:100%;cursor:pointer">
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Importe a traspasar (€)</label>
+        <input type="number" id="tr-importe" placeholder="0" step="any" min="0">
+        <div id="tr-disponible" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
+      </div>
+      <div class="form-group full"><label>Fecha</label><input type="date" id="tr-fecha"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeTraspasoModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveTraspaso()">Traspasar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Modal Gasto ───────────────────────────────────────────────────────── -->
 <div class="overlay" id="gastoOverlay" onclick="if(event.target===this)closeGastoModal()">
   <div class="modal" style="width:420px">
@@ -1270,6 +1316,8 @@ const COLORS = {
   ahorro:   '#f59e0b',
   total:    '#818cf8',
 };
+
+const FONDO_COLORS = ['#6366f1','#10b981','#f59e0b','#f43f5e','#06b6d4','#8b5cf6','#84cc16','#ec4899'];
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 const fmt = (n) => new Intl.NumberFormat('es-ES', {
@@ -1958,14 +2006,18 @@ let accionesOps = [];
 let dividendos  = [];
 let etfCompras  = [];
 let etfVentas   = [];
+let fondosPosiciones = {};
+let traspasos = [];
 
 async function loadOperaciones() {
-  [accionesOps, dividendos, etfCompras, etfVentas, fondosCatalogo] = await Promise.all([
+  [accionesOps, dividendos, etfCompras, etfVentas, fondosCatalogo, fondosPosiciones, traspasos] = await Promise.all([
     fetch('/api/acciones').then(r=>r.json()),
     fetch('/api/dividendos').then(r=>r.json()),
     fetch('/api/etf-compras').then(r=>r.json()),
     fetch('/api/etf-ventas').then(r=>r.json()),
     fetch('/api/fondos-catalogo').then(r=>r.json()),
+    fetch('/api/fondos-posiciones').then(r=>r.json()),
+    fetch('/api/fondos-traspasos').then(r=>r.json()),
   ]);
 }
 
@@ -1983,6 +2035,8 @@ function renderOperaciones() {
   renderFondoCatalogoList();
   renderEtfComprasGroups();
   renderEtfVentasTable();
+  renderFondosChart();
+  renderTraspasosList();
 }
 
 function yearOf(dateStr) {
@@ -2234,7 +2288,7 @@ function renderEtfComprasGroups() {
 
 // ── ETF KPIs ──────────────────────────────────────────────────────────────
 function renderEtfKpis() {
-  const totalInvertido  = etfCompras.reduce((s,r) => s + (r.importe || 0), 0);
+  const totalInvertido  = Object.values(fondosPosiciones).reduce((s,v) => s + v, 0);
   const totalVentaNeto  = etfVentas.reduce((s,r) => s + (r.venta_neto || 0), 0);
   const totalGanSinIRPF = etfVentas.reduce((s,r) => s + (r.ganancia_sin_irpf || 0), 0);
   const totalGanConIRPF = etfVentas.reduce((s,r) => s + (r.ganancia_con_irpf || 0), 0);
@@ -2490,22 +2544,34 @@ function renderFondoCatalogoList() {
     <thead><tr>
       <th style="padding:10px 22px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border2)">Fondo</th>
       <th style="padding:10px 22px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border2)">ISIN</th>
+      <th style="padding:10px 22px;text-align:right;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border2)">Invertido</th>
       <th style="border-bottom:1px solid var(--border2)"></th>
     </tr></thead>
     <tbody>
-    ${fondosCatalogo.map(f => `
+    ${fondosCatalogo.map(f => {
+      const pos = fondosPosiciones[f.nombre] || 0;
+      return `
       <tr style="border-bottom:1px solid var(--border)">
         <td style="padding:12px 22px;font-weight:600">${f.nombre}</td>
         <td style="padding:12px 22px;font-family:monospace;font-size:13px;color:var(--accent2)">${f.isin || '—'}</td>
+        <td style="padding:12px 22px;text-align:right;font-weight:600">${fmt(pos)}</td>
         <td style="padding:12px 22px">
           <div style="display:flex;gap:6px;justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm" data-traspaso-fondo="${f.id}">⇄ Traspaso</button>
             <button class="btn btn-ghost btn-sm" onclick="openEditFondoCatalogoModal(${f.id})">✎</button>
             <button class="btn btn-danger btn-sm" onclick="deleteFondoCatalogo(${f.id})">✕</button>
           </div>
         </td>
-      </tr>`).join('')}
+      </tr>`;
+    }).join('')}
     </tbody>
   </table>`;
+  el.querySelectorAll('[data-traspaso-fondo]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const f = fondosCatalogo.find(x => x.id === +btn.dataset.traspasoFondo);
+      if (f) openTraspasoModal(f.nombre);
+    });
+  });
 }
 
 function populateFondoSelect(selectedEtf) {
@@ -2572,6 +2638,140 @@ async function deleteFondoCatalogo(id) {
   await loadFondosCatalogo();
   renderFondoCatalogoList();
   populateFondoSelect();
+}
+
+// ── Distribución por fondo (gráfica) ─────────────────────────────────────
+function renderFondosChart() {
+  destroyChart('fondos');
+  const canvas = document.getElementById('chartFondos');
+  const empty  = document.getElementById('chartFondosEmpty');
+  if (!canvas) return;
+  const entries = Object.entries(fondosPosiciones).filter(([,v]) => v > 0.01);
+  if (!entries.length) {
+    canvas.style.display = 'none';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  if (empty) empty.style.display = 'none';
+  const ctx = canvas.getContext('2d');
+  const totalInv = entries.reduce((s,[,v]) => s + v, 0);
+  charts.fondos = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: entries.map(([n]) => n),
+      datasets: [{
+        data: entries.map(([,v]) => v),
+        backgroundColor: entries.map((_,i) => FONDO_COLORS[i % FONDO_COLORS.length]),
+        borderColor: '#09090f',
+        borderWidth: 3,
+        hoverOffset: 6,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 900 },
+      cutout: '68%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#6b6b8a', font: { family: 'Plus Jakarta Sans', size: 12 }, padding: 16 },
+        },
+        tooltip: {
+          ...chartDefaults().plugins.tooltip,
+          callbacks: {
+            label: (ctx) => ` ${fmt(ctx.raw)} (${((ctx.raw / totalInv) * 100).toFixed(1)}%)`,
+          },
+        },
+      },
+    },
+  });
+}
+
+// ── Traspasos entre fondos ────────────────────────────────────────────────
+let traspasoOrigenFondo = null;
+
+function openTraspasoModal(fondoNombre) {
+  traspasoOrigenFondo = fondoNombre;
+  const disponible = fondosPosiciones[fondoNombre] || 0;
+  document.getElementById('tr-origen').value = fondoNombre;
+  document.getElementById('tr-importe').value = '';
+  document.getElementById('tr-disponible').textContent = `Coste registrado en este fondo: ${fmt(disponible)} (puede ser menor que el valor de mercado si el fondo ha revalorizado)`;
+  document.getElementById('tr-fecha').value = new Date().toISOString().slice(0,10);
+  const sel = document.getElementById('tr-destino');
+  const destinos = fondosCatalogo.filter(f => f.nombre !== fondoNombre);
+  sel.innerHTML = destinos.length
+    ? destinos.map(f => `<option value="${f.id}">${f.nombre}</option>`).join('')
+    : `<option value="">— No hay otro fondo en tu cartera —</option>`;
+  document.getElementById('traspasoOverlay').classList.add('open');
+}
+function closeTraspasoModal() { document.getElementById('traspasoOverlay').classList.remove('open'); }
+
+async function saveTraspaso() {
+  const selDestino = document.getElementById('tr-destino');
+  const destinoOpt = selDestino.options[selDestino.selectedIndex];
+  const fondoDestino = destinoOpt ? (fondosCatalogo.find(f => f.id === +selDestino.value)?.nombre || '') : '';
+  const importe = parseFloat(document.getElementById('tr-importe').value);
+  const fecha   = document.getElementById('tr-fecha').value;
+  if (!fondoDestino) { toast('Selecciona un fondo destino', 'error'); return; }
+  if (!importe || importe <= 0) { toast('Importe inválido', 'error'); return; }
+  const res = await fetch('/api/fondos-traspasos', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ fondo_origen: traspasoOrigenFondo, fondo_destino: fondoDestino, importe, fecha }),
+  });
+  const data = await res.json();
+  if (!res.ok) { toast(data.error || 'Error al traspasar', 'error'); return; }
+  toast('Traspaso registrado');
+  closeTraspasoModal();
+  await loadOperaciones();
+  renderFondoCatalogoList();
+  renderFondosChart();
+  renderTraspasosList();
+}
+
+async function deleteTraspaso(id) {
+  if (!confirm('¿Eliminar este traspaso? La posición volverá al fondo de origen.')) return;
+  await fetch(`/api/fondos-traspasos/${id}`, { method: 'DELETE' });
+  toast('Traspaso eliminado');
+  await loadOperaciones();
+  renderFondoCatalogoList();
+  renderFondosChart();
+  renderTraspasosList();
+}
+
+function renderTraspasosList() {
+  const el = document.getElementById('traspasosList');
+  if (!el) return;
+  if (!traspasos.length) {
+    el.innerHTML = `<div style="padding:20px 22px;color:var(--muted);font-size:13px">
+      Sin traspasos registrados. Usa el botón "⇄ Traspaso" en tu cartera de fondos para mover dinero entre fondos.
+    </div>`;
+    return;
+  }
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <thead><tr>
+      <th style="padding:10px 22px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border2)">Fecha</th>
+      <th style="padding:10px 22px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border2)">Origen</th>
+      <th style="padding:10px 22px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border2)">Destino</th>
+      <th style="padding:10px 22px;text-align:right;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border2)">Importe</th>
+      <th style="border-bottom:1px solid var(--border2)"></th>
+    </tr></thead>
+    <tbody>
+    ${traspasos.map(t => `
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:12px 22px">${t.fecha || '—'}</td>
+        <td style="padding:12px 22px;font-weight:600">${t.fondo_origen}</td>
+        <td style="padding:12px 22px;font-weight:600">${t.fondo_destino}</td>
+        <td style="padding:12px 22px;text-align:right">${fmt(t.importe)}</td>
+        <td style="padding:12px 22px">
+          <div style="display:flex;gap:6px;justify-content:flex-end">
+            <button class="btn btn-danger btn-sm" onclick="deleteTraspaso(${t.id})">✕</button>
+          </div>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
 }
 
 // ── ETF Compra CRUD ───────────────────────────────────────────────────────
@@ -2648,13 +2848,13 @@ async function saveEtfCompra() {
   if (!res.ok) { toast('Error al guardar', 'error'); return; }
   toast(editEtfCompraId ? 'Compra actualizada' : 'Compra añadida');
   closeEtfCompraModal();
-  await loadOperaciones(); renderEtfComprasGroups();
+  await loadOperaciones(); renderEtfComprasGroups(); renderFondoCatalogoList(); renderFondosChart();
 }
 async function deleteEtfCompra(id) {
   if (!confirm('¿Eliminar esta compra?')) return;
   await fetch(`/api/etf-compras/${id}`, { method: 'DELETE' });
   toast('Compra eliminada');
-  await loadOperaciones(); renderEtfComprasGroups();
+  await loadOperaciones(); renderEtfComprasGroups(); renderFondoCatalogoList(); renderFondosChart();
 }
 
 // ── ETF Venta CRUD ────────────────────────────────────────────────────────
@@ -2686,13 +2886,13 @@ async function saveEtfVenta() {
   if (!res.ok) { toast('Error al guardar', 'error'); return; }
   toast(editEtfVentaId ? 'Venta actualizada' : 'Venta añadida');
   closeEtfVentaModal();
-  await loadOperaciones(); renderEtfVentasTable();
+  await loadOperaciones(); renderEtfVentasTable(); renderFondoCatalogoList(); renderFondosChart();
 }
 async function deleteEtfVenta(id) {
   if (!confirm('¿Eliminar esta venta?')) return;
   await fetch(`/api/etf-ventas/${id}`, { method: 'DELETE' });
   toast('Venta eliminada');
-  await loadOperaciones(); renderEtfVentasTable();
+  await loadOperaciones(); renderEtfVentasTable(); renderFondoCatalogoList(); renderFondosChart();
 }
 
 // ── Renta ────────────────────────────────────────────────────────────────

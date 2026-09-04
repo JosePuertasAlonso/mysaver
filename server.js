@@ -120,6 +120,14 @@ async function initDB() {
       nombre  TEXT NOT NULL,
       isin    TEXT
     );
+    CREATE TABLE IF NOT EXISTS fondos_traspasos (
+      id            SERIAL PRIMARY KEY,
+      user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      fondo_origen  TEXT NOT NULL,
+      fondo_destino TEXT NOT NULL,
+      fecha         TEXT,
+      importe       REAL NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS etf_ventas (
       id                SERIAL PRIMARY KEY,
       user_id           INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -498,6 +506,48 @@ app.delete('/api/fondos-catalogo/:id', async (req, res) => {
   res.json({ success: true });
 });
 
+// ── API: Fondos traspasos ──────────────────────────────────────────────────────
+async function fondosPosiciones(userId) {
+  const [compras, ventas, traspasos] = await Promise.all([
+    q('SELECT etf, COALESCE(SUM(importe),0) as total FROM etf_compras WHERE user_id=$1 GROUP BY etf', [userId]),
+    q('SELECT etf, COALESCE(SUM(coste_total),0) as total FROM etf_ventas WHERE user_id=$1 GROUP BY etf', [userId]),
+    q('SELECT fondo_origen, fondo_destino, importe FROM fondos_traspasos WHERE user_id=$1', [userId]),
+  ]);
+  const pos = {};
+  for (const r of compras.rows) pos[r.etf] = (pos[r.etf] || 0) + Number(r.total);
+  for (const r of ventas.rows)  pos[r.etf] = (pos[r.etf] || 0) - Number(r.total);
+  for (const r of traspasos.rows) {
+    pos[r.fondo_origen]  = (pos[r.fondo_origen]  || 0) - Number(r.importe);
+    pos[r.fondo_destino] = (pos[r.fondo_destino] || 0) + Number(r.importe);
+  }
+  for (const k of Object.keys(pos)) pos[k] = Math.max(0, pos[k]);
+  return pos;
+}
+
+app.get('/api/fondos-posiciones', async (req, res) => {
+  res.json(await fondosPosiciones(req.session.userId));
+});
+app.get('/api/fondos-traspasos', async (req, res) => {
+  const { rows } = await q('SELECT * FROM fondos_traspasos WHERE user_id=$1 ORDER BY fecha DESC, id DESC', [req.session.userId]);
+  res.json(rows);
+});
+app.post('/api/fondos-traspasos', async (req, res) => {
+  const { fondo_origen, fondo_destino, fecha, importe } = req.body;
+  const imp = +importe;
+  if (!fondo_origen || !fondo_destino) return res.status(400).json({ error: 'Selecciona fondo origen y destino' });
+  if (fondo_origen === fondo_destino) return res.status(400).json({ error: 'El fondo origen y destino deben ser distintos' });
+  if (!imp || imp <= 0) return res.status(400).json({ error: 'Importe inválido' });
+  const { rows: [r] } = await q(
+    'INSERT INTO fondos_traspasos (user_id,fondo_origen,fondo_destino,fecha,importe) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+    [req.session.userId, fondo_origen, fondo_destino, fecha || null, imp]);
+  res.status(201).json(r);
+});
+app.delete('/api/fondos-traspasos/:id', async (req, res) => {
+  const { rowCount } = await q('DELETE FROM fondos_traspasos WHERE id=$1 AND user_id=$2', [req.params.id, req.session.userId]);
+  if (!rowCount) return res.status(404).json({ error: 'Not found' });
+  res.json({ success: true });
+});
+
 // ── API: Gastos ───────────────────────────────────────────────────────────────
 app.get('/api/gastos', async (req, res) => {
   const { rows } = await q('SELECT * FROM gastos WHERE user_id=$1 ORDER BY categoria ASC, nombre ASC', [req.session.userId]);
@@ -527,7 +577,7 @@ app.delete('/api/gastos/:id', async (req, res) => {
 
 // ── API: Backup ───────────────────────────────────────────────────────────────
 async function exportData(userId) {
-  const tables = ['snapshots','acciones_ops','dividendos','etf_compras','fondos_catalogo','etf_ventas','gastos'];
+  const tables = ['snapshots','acciones_ops','dividendos','etf_compras','fondos_catalogo','etf_ventas','fondos_traspasos','gastos'];
   const data = { version: 3, exported_at: new Date().toISOString(), tables: {} };
   for (const t of tables) {
     const { rows } = await q(`SELECT * FROM ${t} WHERE user_id=$1`, [userId]);
@@ -553,7 +603,7 @@ app.post('/api/backup/restore', upload.single('file'), async (req, res) => {
     const data = JSON.parse(content);
     if (!data.tables) return res.status(400).json({ error: 'Formato de backup inválido' });
     const uid = req.session.userId;
-    const tables = ['etf_ventas','etf_compras','dividendos','acciones_ops','fondos_catalogo','snapshots','gastos'];
+    const tables = ['etf_ventas','etf_compras','dividendos','acciones_ops','fondos_catalogo','fondos_traspasos','snapshots','gastos'];
     for (const t of tables) await q(`DELETE FROM ${t} WHERE user_id=$1`, [uid]);
     for (const [table, rows] of Object.entries(data.tables)) {
       for (const row of rows) {
