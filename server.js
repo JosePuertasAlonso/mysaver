@@ -390,6 +390,79 @@ app.delete('/api/acciones/:id', async (req, res) => {
   res.json({ success: true });
 });
 
+// Vende total o parcialmente una posición abierta. Si se vende menos de lo
+// que hay, la fila original se reduce (sigue abierta) y se crea una fila
+// nueva para el lote vendido, con las comisiones de compra prorrateadas.
+app.post('/api/acciones/:id/vender', async (req, res) => {
+  const { titulos, fecha_venta, precio_venta, comision_venta, precio_dolar_venta, comision_divisa_v } = req.body;
+  const tVender = +titulos;
+  const pVenta  = +precio_venta;
+  if (!tVender || tVender <= 0) return res.status(400).json({ error: 'Indica cuántos títulos quieres vender' });
+  if (!pVenta) return res.status(400).json({ error: 'Indica el precio de venta' });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows: [row] } = await client.query(
+      'SELECT * FROM acciones_ops WHERE id=$1 AND user_id=$2 FOR UPDATE', [req.params.id, req.session.userId]);
+    if (!row) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Not found' }); }
+    if (row.fecha_venta) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Esta posición ya está vendida' }); }
+    if (!row.titulos || !row.precio_compra) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'La compra original no tiene títulos/precio registrados' }); }
+    if (tVender > row.titulos + 1e-6) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: `No puedes vender más de los ${row.titulos} títulos disponibles` });
+    }
+
+    const cv  = comision_venta ? +comision_venta : 0;
+    const cdv = comision_divisa_v ? +comision_divisa_v : 0;
+    const ratio   = tVender / row.titulos;
+    const ccSold  = (row.comision_compra  || 0) * ratio;
+    const cdcSold = (row.comision_divisa_c || 0) * ratio;
+    const totalCompraSold = tVender * row.precio_compra + ccSold + cdcSold;
+    const totalVentaSold  = tVender * pVenta - cv - cdv;
+    const beneficioSold   = totalVentaSold - totalCompraSold;
+    const esVentaTotal    = tVender > row.titulos - 1e-6;
+
+    let venta;
+    if (esVentaTotal) {
+      const { rows: [r] } = await client.query(`
+        UPDATE acciones_ops SET fecha_venta=$1,precio_venta=$2,comision_venta=$3,precio_dolar_venta=$4,
+          comision_divisa_v=$5,total_venta=$6,beneficio=$7
+        WHERE id=$8 RETURNING *`,
+        [fecha_venta || null, pVenta, cv || null, precio_dolar_venta ? +precio_dolar_venta : null, cdv || null,
+         totalVentaSold, beneficioSold, row.id]);
+      venta = r;
+    } else {
+      const titulosRestantes = row.titulos - tVender;
+      const ccRestante  = (row.comision_compra  || 0) - ccSold;
+      const cdcRestante = (row.comision_divisa_c || 0) - cdcSold;
+      const totalCompraRestante = titulosRestantes * row.precio_compra + ccRestante + cdcRestante;
+
+      await client.query(
+        'UPDATE acciones_ops SET titulos=$1,comision_compra=$2,comision_divisa_c=$3,total_compra=$4 WHERE id=$5',
+        [titulosRestantes, ccRestante || null, cdcRestante || null, totalCompraRestante, row.id]);
+
+      const { rows: [r] } = await client.query(`
+        INSERT INTO acciones_ops (user_id,accion,fecha_compra,fecha_venta,titulos,precio_compra,comision_compra,
+          precio_dolar_compra,comision_divisa_c,precio_venta,comision_venta,precio_dolar_venta,comision_divisa_v,
+          total_compra,total_venta,beneficio)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+        [req.session.userId, row.accion, row.fecha_compra, fecha_venta || null, tVender, row.precio_compra,
+         ccSold || null, row.precio_dolar_compra, cdcSold || null, pVenta, cv || null,
+         precio_dolar_venta ? +precio_dolar_venta : null, cdv || null, totalCompraSold, totalVentaSold, beneficioSold]);
+      venta = r;
+    }
+
+    await client.query('COMMIT');
+    res.status(201).json({ success: true, venta });
+  } catch (e) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: e.message });
+  } finally {
+    client.release();
+  }
+});
+
 // ── API: Dividendos ───────────────────────────────────────────────────────────
 app.get('/api/dividendos', async (req, res) => {
   const { rows } = await q('SELECT * FROM dividendos WHERE user_id=$1 ORDER BY fecha ASC', [req.session.userId]);
