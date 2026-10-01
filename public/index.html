@@ -1133,6 +1133,33 @@ select option:checked { background: var(--accent); }
   </div>
 </div>
 
+<!-- ── Modal Vender Acción (parcial o total) ─────────────────────────────── -->
+<div class="overlay" id="ventaAccionOverlay" onclick="if(event.target===this)closeVentaAccionModal()">
+  <div class="modal" style="width:460px">
+    <div class="modal-title">Vender acción</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Acción</label>
+        <input type="text" id="va-accion" readonly style="background:rgba(255,255,255,.03);cursor:default">
+      </div>
+      <div class="form-group full">
+        <label>Títulos a vender</label>
+        <input type="number" id="va-titulos" placeholder="0" step="any">
+        <div id="va-disponibles" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
+      </div>
+      <div class="form-group full"><label>Fecha venta</label><input type="date" id="va-fecha_venta"></div>
+      <div class="form-group"><label>Precio (€)</label><input type="number" id="va-precio_venta" placeholder="0" step="any"></div>
+      <div class="form-group"><label>Comisión (€)</label><input type="number" id="va-comision_venta" placeholder="0" step="any"></div>
+      <div class="form-group"><label>P. Dólar</label><input type="number" id="va-precio_dolar_venta" placeholder="opcional" step="any"></div>
+      <div class="form-group"><label>Com. Divisa (€)</label><input type="number" id="va-comision_divisa_v" placeholder="opcional" step="any"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeVentaAccionModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveVentaAccion()">Vender</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Modal Dividendo ───────────────────────────────────────────────────── -->
 <div class="overlay" id="dividendoOverlay" onclick="if(event.target===this)closeDividendoModal()">
   <div class="modal" style="width:420px">
@@ -2108,6 +2135,7 @@ function renderAccionesGroups() {
         ${r.precio_dolar_compra ? `<td class="text-right text-muted" style="font-size:11px">$${fmtN(r.precio_dolar_compra,4)}</td>` : '<td></td>'}
         <td>
           <div class="td-actions">
+            ${!r.fecha_venta ? `<button class="btn btn-ghost btn-sm" onclick="openVentaAccionModal(${r.id})">💰 Vender</button>` : ''}
             <button class="btn btn-ghost btn-sm" onclick="openEditAccionModal(${r.id})">✎</button>
             <button class="btn btn-danger btn-sm" onclick="deleteAccion(${r.id})">✕</button>
           </div>
@@ -2485,6 +2513,45 @@ async function deleteAccion(id) {
   if (!confirm('¿Eliminar esta operación?')) return;
   await fetch(`/api/acciones/${id}`, { method: 'DELETE' });
   toast('Operación eliminada');
+  await loadOperaciones(); renderAccionesGroups();
+}
+
+// ── Vender acción (total o parcial) ────────────────────────────────────────
+let ventaAccionId = null;
+
+function openVentaAccionModal(id) {
+  const r = accionesOps.find(x => x.id === id); if (!r) return;
+  ventaAccionId = id;
+  document.getElementById('va-accion').value = r.accion;
+  document.getElementById('va-titulos').value = r.titulos;
+  document.getElementById('va-titulos').max   = r.titulos;
+  document.getElementById('va-disponibles').textContent = `Disponibles: ${fmtN(r.titulos, 0)} títulos`;
+  document.getElementById('va-fecha_venta').value = new Date().toISOString().slice(0,10);
+  ['va-precio_venta','va-comision_venta','va-precio_dolar_venta','va-comision_divisa_v'].forEach(fid => {
+    document.getElementById(fid).value = '';
+  });
+  document.getElementById('ventaAccionOverlay').classList.add('open');
+}
+function closeVentaAccionModal() { document.getElementById('ventaAccionOverlay').classList.remove('open'); }
+
+async function saveVentaAccion() {
+  const payload = {
+    titulos:            document.getElementById('va-titulos').value,
+    fecha_venta:        document.getElementById('va-fecha_venta').value,
+    precio_venta:       document.getElementById('va-precio_venta').value,
+    comision_venta:     document.getElementById('va-comision_venta').value,
+    precio_dolar_venta: document.getElementById('va-precio_dolar_venta').value,
+    comision_divisa_v:  document.getElementById('va-comision_divisa_v').value,
+  };
+  if (!payload.titulos || +payload.titulos <= 0) { toast('Indica cuántos títulos quieres vender', 'error'); return; }
+  if (!payload.precio_venta) { toast('Indica el precio de venta', 'error'); return; }
+  const res = await fetch(`/api/acciones/${ventaAccionId}/vender`, {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) { toast(data.error || 'Error al vender', 'error'); return; }
+  toast('Venta registrada');
+  closeVentaAccionModal();
   await loadOperaciones(); renderAccionesGroups();
 }
 
