@@ -1106,7 +1106,7 @@ select.select-auto { width: auto; min-width: 120px; }
             </div>
             <div class="card-body panel-stack">
               <p class="prose">
-                Descarga el archivo <code>patrimonio.db</code> a tu equipo.
+                Descarga una copia de todos tus datos en un archivo <code>.json</code>.
                 Guárdalo en un lugar seguro (nube, disco externo…).
               </p>
               <a href="/api/backup/download" class="btn btn-primary btn-block">
@@ -1119,7 +1119,7 @@ select.select-auto { width: auto; min-width: 120px; }
                   <span>Esto reemplazará <strong>todos</strong> los datos actuales con los del archivo seleccionado.</span>
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                  <input type="file" id="restoreFile" accept=".db" style="flex:1;min-width:0">
+                  <input type="file" id="restoreFile" accept=".json,application/json" style="flex:1;min-width:0">
                   <button class="btn btn-destructive btn-sm" onclick="restoreBackup()">Restaurar</button>
                 </div>
                 <div id="restoreMsg" class="field-hint"></div>
@@ -1579,6 +1579,12 @@ const fmtShort = (n) => {
 
 const total = (s) => s.acciones + s.fondos + s.ahorro;
 
+// Escapa texto del usuario antes de meterlo en plantillas innerHTML
+const ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ESC_MAP[c]);
+// Argumento seguro para un handler inline: onclick="fn(${jsArg(x)})"
+const jsArg = (v) => esc(JSON.stringify(v));
+
 const deltaClass = (v) => v > 0 ? 'pos' : v < 0 ? 'neg' : 'neu';
 const deltaSign  = (v) => v > 0 ? '+' : '';
 
@@ -1872,8 +1878,8 @@ function renderSnapshotsTable() {
   tbody.innerHTML = snapshots.map(s => {
     const tot = total(s);
     return `<tr>
-      <td>${s.fecha}</td>
-      <td class="fw-700">${s.label}</td>
+      <td>${esc(s.fecha)}</td>
+      <td class="fw-700">${esc(s.label)}</td>
       <td class="text-right">${fmt(s.acciones)}</td>
       <td class="text-right">${fmt(s.fondos)}</td>
       <td class="text-right">${fmt(s.ahorro)}</td>
@@ -2156,25 +2162,25 @@ function renderEstadisticas() {
   document.getElementById('statsHighlights').innerHTML = `
     <div class="stats-highlight">
       <div class="sh-label">Mejor mes</div>
-      <div class="sh-value">${best.label}</div>
+      <div class="sh-value">${esc(best.label)}</div>
       <div class="sh-sub pos">${fmtPct(best.pctTotal)}</div>
     </div>
     <div class="stats-highlight">
       <div class="sh-label">Peor mes</div>
-      <div class="sh-value">${worst.label}</div>
+      <div class="sh-value">${esc(worst.label)}</div>
       <div class="sh-sub neg">${fmtPct(worst.pctTotal)}</div>
     </div>
     <div class="stats-highlight">
       <div class="sh-label">Variación total</div>
       <div class="sh-value is-num ${totalVar>=0?'pos':'neg'}">${fmtPct(totalVar)}</div>
-      <div class="sh-sub" style="font-family:var(--font)">desde ${first.label}</div>
+      <div class="sh-sub" style="font-family:var(--font)">desde ${esc(first.label)}</div>
     </div>
   `;
 
   // Delta table
   document.getElementById('deltaBody').innerHTML = deltas.map(d => `
     <tr>
-      <td class="fw-700">${d.label}</td>
+      <td class="fw-700">${esc(d.label)}</td>
       <td class="text-right"><span class="badge badge-${deltaClass(d.dAcc)}">${deltaSign(d.dAcc)}${fmt(d.dAcc)}</span></td>
       <td class="text-right"><span class="badge badge-${deltaClass(d.dFondos)}">${deltaSign(d.dFondos)}${fmt(d.dFondos)}</span></td>
       <td class="text-right"><span class="badge badge-${deltaClass(d.dAhorro)}">${deltaSign(d.dAhorro)}${fmt(d.dAhorro)}</span></td>
@@ -2370,9 +2376,9 @@ function renderAccionesGroups() {
 
     const trs = rows.map(r => `
       <tr>
-        <td class="fw-700">${r.accion}</td>
-        <td>${r.fecha_compra || '—'}</td>
-        <td>${r.fecha_venta || '<span class="badge badge-accent">Abierta</span>'}</td>
+        <td class="fw-700">${esc(r.accion)}</td>
+        <td>${esc(r.fecha_compra) || '—'}</td>
+        <td>${esc(r.fecha_venta) || '<span class="badge badge-accent">Abierta</span>'}</td>
         <td class="text-right">${fmtN(r.titulos, 0)}</td>
         <td class="text-right">${fmtN(r.precio_compra)}</td>
         <td class="text-right text-muted">${fmtE(r.comision_compra)}</td>
@@ -2392,9 +2398,9 @@ function renderAccionesGroups() {
       </tr>`).join('');
 
     return `
-      <div class="year-group" id="yg-acc-${label}">
-        <div class="year-header" onclick="toggleYearGroup('yg-acc-${label}')">
-          <span class="year-label">${label}</span>
+      <div class="year-group" id="${esc('yg-acc-' + label)}">
+        <div class="year-header" onclick="toggleYearGroup(${jsArg('yg-acc-' + label)})">
+          <span class="year-label">${esc(label)}</span>
           <div class="year-summary">
             <span>Invertido: <strong>${fmt(totalC)}</strong></span>
             ${isActuales
@@ -2457,7 +2463,7 @@ function renderDividendosTable() {
     return `
       <div class="card" style="margin-bottom:16px">
         <div class="card-header">
-          <span class="card-title">${yr}</span>
+          <span class="card-title">${esc(yr)}</span>
           <span class="card-meta">Bruto <span class="num" style="color:var(--text)">${fmt(totalBruto)}</span>&nbsp;&nbsp; Neto <span class="num" style="color:var(--text)">${fmt(totalNeto)}</span></span>
         </div>
         <div class="card-body" style="padding:0">
@@ -2473,8 +2479,8 @@ function renderDividendosTable() {
               <tbody>
                 ${rows.map(r => `
                   <tr>
-                    <td class="fw-700">${r.accion}</td>
-                    <td>${r.fecha || '—'}</td>
+                    <td class="fw-700">${esc(r.accion)}</td>
+                    <td>${esc(r.fecha) || '—'}</td>
                     <td class="text-right">${fmtN(r.euros_accion, 3)}</td>
                     <td class="text-right">${fmtE(r.bruto)}</td>
                     <td class="text-right"><span class="badge badge-pos">${fmtE(r.neto)}</span></td>
@@ -2502,7 +2508,7 @@ function renderEtfComprasGroups() {
   const container = document.getElementById('etfComprasGroups');
 
   if (!filtered.length) {
-    container.innerHTML = `<div class="empty-state"><i class="ph ph-magnifying-glass" aria-hidden="true"></i>Sin resultados para "<strong>${q}</strong>"</div>`;
+    container.innerHTML = `<div class="empty-state"><i class="ph ph-magnifying-glass" aria-hidden="true"></i>Sin resultados para "<strong>${esc(q)}</strong>"</div>`;
     return;
   }
 
@@ -2514,10 +2520,10 @@ function renderEtfComprasGroups() {
     const trs = rows.map(r => `
       <tr>
         <td style="max-width:280px;white-space:normal">
-          <div class="fw-700">${r.etf}</div>
-          ${r.isin ? `<div class="cell-sub">${r.isin}</div>` : ''}
+          <div class="fw-700">${esc(r.etf)}</div>
+          ${r.isin ? `<div class="cell-sub">${esc(r.isin)}</div>` : ''}
         </td>
-        <td>${r.fecha_compra || '—'}</td>
+        <td>${esc(r.fecha_compra) || '—'}</td>
         <td class="text-right">${fmtE(r.importe)}</td>
         <td class="text-right">${fmtN(r.precio)}</td>
         <td class="text-right">${fmtN(r.titulos, 6)}</td>
@@ -2531,9 +2537,9 @@ function renderEtfComprasGroups() {
       </tr>`).join('');
 
     return `
-      <div class="year-group" id="yg-etf-${yr}">
-        <div class="year-header" onclick="toggleYearGroup('yg-etf-${yr}')">
-          <span class="year-label">${yr}</span>
+      <div class="year-group" id="${esc('yg-etf-' + yr)}">
+        <div class="year-header" onclick="toggleYearGroup(${jsArg('yg-etf-' + yr)})">
+          <span class="year-label">${esc(yr)}</span>
           <div class="year-summary">
             <span><strong>${nOps}</strong> compras</span>
             <span>Total invertido: <strong>${fmt(totalInv)}</strong></span>
@@ -2604,8 +2610,8 @@ function renderEtfVentasTable() {
     return `
     <div class="sale-row">
       <div>
-        <div class="sale-name">${r.etf}</div>
-        <div class="sale-date">${r.fecha_venta || 'Sin fecha'}</div>
+        <div class="sale-name">${esc(r.etf)}</div>
+        <div class="sale-date">${esc(r.fecha_venta) || 'Sin fecha'}</div>
       </div>
 
       <div class="sale-metrics">
@@ -2845,8 +2851,8 @@ function renderFondoCatalogoList() {
       const pos = fondosPosiciones[f.nombre] || 0;
       return `
       <tr>
-        <td class="fw-700">${f.nombre}</td>
-        <td class="cell-sub" style="font-size:13px">${f.isin || '—'}</td>
+        <td class="fw-700">${esc(f.nombre)}</td>
+        <td class="cell-sub" style="font-size:13px">${esc(f.isin) || '—'}</td>
         <td class="text-right">${fmt(pos)}</td>
         <td>
           <div class="td-actions">
@@ -2871,8 +2877,8 @@ function populateFondoSelect(selectedEtf) {
   const sel = document.getElementById('fec-select');
   sel.innerHTML = `<option value="">— Selecciona un fondo —</option>
     ${fondosCatalogo.map(f =>
-      `<option value="${f.id}" data-nombre="${f.nombre}" data-isin="${f.isin||''}" ${selectedEtf===f.nombre?'selected':''}>
-        ${f.nombre}${f.isin ? ' · ' + f.isin : ''}
+      `<option value="${f.id}" data-nombre="${esc(f.nombre)}" data-isin="${esc(f.isin)}" ${selectedEtf===f.nombre?'selected':''}>
+        ${esc(f.nombre)}${f.isin ? ' · ' + esc(f.isin) : ''}
       </option>`
     ).join('')}`;
 }
@@ -2996,7 +3002,7 @@ function openTraspasoModal(fondoNombre) {
   const sel = document.getElementById('tr-destino');
   const destinos = fondosCatalogo.filter(f => f.nombre !== fondoNombre);
   sel.innerHTML = destinos.length
-    ? destinos.map(f => `<option value="${f.id}">${f.nombre}</option>`).join('')
+    ? destinos.map(f => `<option value="${f.id}">${esc(f.nombre)}</option>`).join('')
     : `<option value="">— No hay otro fondo en tu cartera —</option>`;
   document.getElementById('traspasoOverlay').classList.add('open');
 }
@@ -3054,9 +3060,9 @@ function renderTraspasosList() {
     <tbody>
     ${traspasos.map(t => `
       <tr>
-        <td>${t.fecha || '—'}</td>
-        <td class="fw-700">${t.fondo_origen}</td>
-        <td class="fw-700">${t.fondo_destino}</td>
+        <td>${esc(t.fecha) || '—'}</td>
+        <td class="fw-700">${esc(t.fondo_origen)}</td>
+        <td class="fw-700">${esc(t.fondo_destino)}</td>
         <td class="text-right">${fmt(t.importe)}</td>
         <td>
           <div class="td-actions">
@@ -3311,7 +3317,7 @@ async function loadDriveFiles() {
         const kb = f.size ? Math.round(f.size/1024) + ' KB' : '';
         return `<div class="file-row">
           <span>${label}${kb ? ' <span class="text-muted num">' + kb + '</span>' : ''}</span>
-          <a href="/api/drive/download/${f.id}" download="${f.name}"><i class="ph ph-download-simple" aria-hidden="true"></i> Descargar</a>
+          <a href="/api/drive/download/${encodeURIComponent(f.id)}" download="${esc(f.name)}"><i class="ph ph-download-simple" aria-hidden="true"></i> Descargar</a>
         </div>`;
       }).join('')}
     </div>`;
@@ -3332,9 +3338,14 @@ async function restoreBackup() {
   if (!confirm('⚠️ Esto reemplazará TODOS tus datos actuales. ¿Estás seguro?')) return;
   const form = new FormData(); form.append('file', file);
   msg.textContent = 'Restaurando…'; msg.style.color='var(--muted)';
-  const res = await fetch('/api/backup/restore', { method:'POST', body:form }).then(r=>r.json());
+  const res = await fetch('/api/backup/restore', { method:'POST', body:form })
+    .then(r => r.json())
+    .catch(() => ({ error: 'Error de red: no se ha restaurado nada.' }));
   if (res.error) { msg.textContent = res.error; msg.style.color='var(--red)'; }
-  else { msg.textContent = res.message; msg.style.color='var(--green)'; }
+  else {
+    msg.textContent = res.message + ' Recargando…'; msg.style.color='var(--green)';
+    setTimeout(() => location.reload(), 1200);
+  }
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────
@@ -3403,14 +3414,14 @@ async function renderGastos() {
         <div class="cat-card-header">
           <div class="cat-card-title">
             <div class="cat-icon" style="--cat-bg:${meta.bg};--cat-fg:${meta.fg}"><i class="ph ph-${meta.icon}" aria-hidden="true"></i></div>
-            <span>${cat}</span>
+            <span>${esc(cat)}</span>
           </div>
           <span class="cat-total">${items.length ? fmt(catTotal) : ''}</span>
         </div>
         <div class="cat-items">
           ${items.length ? items.map(g => `
             <div class="cat-item">
-              <span class="cat-item-name">${g.nombre}</span>
+              <span class="cat-item-name">${esc(g.nombre)}</span>
               <div class="cat-item-right">
                 <span class="cat-item-amount">${fmt(g.importe)}</span>
                 <div class="cat-item-actions">
@@ -3421,10 +3432,10 @@ async function renderGastos() {
             </div>`).join('') : `<div class="cat-empty">Sin gastos en esta categoría</div>`}
         </div>
         <div class="gastos-add-row">
-          <input type="text" placeholder="Nombre del gasto" aria-label="Nombre del gasto" id="quick-nombre-${cat}">
-          <input type="number" placeholder="€" aria-label="Importe" id="quick-importe-${cat}" step="any" min="0"
-            onkeydown="if(event.key==='Enter')quickAddGasto('${cat}')">
-          <button class="btn btn-ghost btn-sm" onclick="quickAddGasto('${cat}')"><i class="ph ph-plus" aria-hidden="true"></i> Añadir</button>
+          <input type="text" placeholder="Nombre del gasto" aria-label="Nombre del gasto" id="${esc('quick-nombre-' + cat)}">
+          <input type="number" placeholder="€" aria-label="Importe" id="${esc('quick-importe-' + cat)}" step="any" min="0"
+            onkeydown="if(event.key==='Enter')quickAddGasto(${jsArg(cat)})">
+          <button class="btn btn-ghost btn-sm" onclick="quickAddGasto(${jsArg(cat)})"><i class="ph ph-plus" aria-hidden="true"></i> Añadir</button>
         </div>
       </div>`;
   }).join('');
@@ -3509,10 +3520,10 @@ async function renderAdmin() {
   container.innerHTML = users.map(u => `
     <div class="user-card">
       <div class="user-card-head">
-        <span class="user-name"><span class="avatar">${u.username.charAt(0)}</span>${u.username}
+        <span class="user-name"><span class="avatar">${esc(u.username.charAt(0))}</span>${esc(u.username)}
           ${u.is_admin ? '<span class="badge badge-accent">Admin</span>' : ''}
         </span>
-        <button class="btn btn-ghost btn-sm" onclick="changePassword(${u.id}, '${u.username}')"><i class="ph ph-key" aria-hidden="true"></i> Cambiar contraseña</button>
+        <button class="btn btn-ghost btn-sm" onclick="changePassword(${u.id}, ${jsArg(u.username)})"><i class="ph ph-key" aria-hidden="true"></i> Cambiar contraseña</button>
       </div>
       <div class="sub-heading" style="color:var(--text-2);font-weight:500">Secciones visibles</div>
       <div class="perm-list">
@@ -3521,7 +3532,7 @@ async function renderAdmin() {
           const disabled = u.is_admin ? 'disabled' : '';
           return `<label class="perm-chip ${u.is_admin ? 'is-disabled' : ''}">
             <input type="checkbox" ${checked ? 'checked' : ''} ${disabled}
-              onchange="togglePermission(${u.id}, '${key}', this.checked)">
+              onchange="togglePermission(${u.id}, ${jsArg(key)}, this.checked)">
             ${label}
           </label>`;
         }).join('')}
