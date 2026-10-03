@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express      = require('express');
-const { Pool }     = require('pg');
+const { Pool, types } = require('pg');
 const path         = require('path');
 const fs           = require('fs');
 const multer       = require('multer');
@@ -9,8 +9,19 @@ const { execFile } = require('child_process');
 const session      = require('express-session');
 const PgSession    = require('connect-pg-simple')(session);
 const bcrypt       = require('bcryptjs');
+const crypto       = require('crypto');
+const { createMarket, isValidSymbol } = require('./market');
 
-const upload = multer({ dest: path.join(__dirname, 'tmp') });
+const IS_PROD = process.env.NODE_ENV === 'production';
+if (IS_PROD && !process.env.SESSION_SECRET) {
+  console.error('❌ Falta SESSION_SECRET en producción');
+  process.exit(1);
+}
+
+// NUMERIC llega como string por defecto: lo devolvemos como número para el frontend
+types.setTypeParser(types.builtins.NUMERIC, v => parseFloat(v));
+
+const upload = multer({ dest: path.join(__dirname, 'tmp'), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -21,6 +32,11 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 
 const q = (sql, params) => pool.query(sql, params);
+const market = createMarket(q);
+const ident = (name) => '"' + String(name).replace(/"/g, '""') + '"';
+
+// Tablas con datos del usuario incluidas en backup/restauración
+const BACKUP_TABLES = ['snapshots','acciones_ops','dividendos','etf_compras','fondos_catalogo','etf_ventas','fondos_traspasos','gastos'];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function getOAuth2Client(cfg) {
@@ -51,7 +67,7 @@ async function initDB() {
       username      TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
       is_admin      BOOLEAN NOT NULL DEFAULT false,
-      permissions   JSONB NOT NULL DEFAULT '["dashboard","snapshots","objetivo","estadisticas","operaciones","backup"]'
+      permissions   JSONB NOT NULL DEFAULT '["dashboard","snapshots","objetivo","estadisticas","rentabilidad","operaciones","backup"]'
     );
     CREATE TABLE IF NOT EXISTS sessions (
       sid    VARCHAR NOT NULL COLLATE "default",
@@ -65,9 +81,9 @@ async function initDB() {
       user_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       label    TEXT NOT NULL,
       fecha    TEXT NOT NULL,
-      acciones REAL NOT NULL DEFAULT 0,
-      fondos   REAL NOT NULL DEFAULT 0,
-      ahorro   REAL NOT NULL DEFAULT 0
+      acciones NUMERIC NOT NULL DEFAULT 0,
+      fondos   NUMERIC NOT NULL DEFAULT 0,
+      ahorro   NUMERIC NOT NULL DEFAULT 0
     );
     CREATE TABLE IF NOT EXISTS config (
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -81,27 +97,27 @@ async function initDB() {
       accion                TEXT NOT NULL,
       fecha_compra          TEXT,
       fecha_venta           TEXT,
-      titulos               REAL,
-      precio_compra         REAL,
-      comision_compra       REAL,
-      precio_dolar_compra   REAL,
-      comision_divisa_c     REAL,
-      precio_venta          REAL,
-      comision_venta        REAL,
-      precio_dolar_venta    REAL,
-      comision_divisa_v     REAL,
-      total_compra          REAL,
-      total_venta           REAL,
-      beneficio             REAL
+      titulos               NUMERIC,
+      precio_compra         NUMERIC,
+      comision_compra       NUMERIC,
+      precio_dolar_compra   NUMERIC,
+      comision_divisa_c     NUMERIC,
+      precio_venta          NUMERIC,
+      comision_venta        NUMERIC,
+      precio_dolar_venta    NUMERIC,
+      comision_divisa_v     NUMERIC,
+      total_compra          NUMERIC,
+      total_venta           NUMERIC,
+      beneficio             NUMERIC
     );
     CREATE TABLE IF NOT EXISTS dividendos (
       id           SERIAL PRIMARY KEY,
       user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       accion       TEXT NOT NULL,
       fecha        TEXT,
-      euros_accion REAL,
-      bruto        REAL,
-      neto         REAL
+      euros_accion NUMERIC,
+      bruto        NUMERIC,
+      neto         NUMERIC
     );
     CREATE TABLE IF NOT EXISTS etf_compras (
       id           SERIAL PRIMARY KEY,
@@ -109,10 +125,10 @@ async function initDB() {
       etf          TEXT NOT NULL,
       isin         TEXT,
       fecha_compra TEXT,
-      importe      REAL,
-      precio       REAL,
-      titulos      REAL,
-      comision     REAL
+      importe      NUMERIC,
+      precio       NUMERIC,
+      titulos      NUMERIC,
+      comision     NUMERIC
     );
     CREATE TABLE IF NOT EXISTS fondos_catalogo (
       id      SERIAL PRIMARY KEY,
@@ -126,44 +142,64 @@ async function initDB() {
       fondo_origen  TEXT NOT NULL,
       fondo_destino TEXT NOT NULL,
       fecha         TEXT,
-      importe       REAL NOT NULL
+      importe       NUMERIC NOT NULL
     );
     CREATE TABLE IF NOT EXISTS etf_ventas (
       id                SERIAL PRIMARY KEY,
       user_id           INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       etf               TEXT NOT NULL,
       fecha_venta       TEXT,
-      coste_total       REAL,
-      comision_compra   REAL,
-      cantidad          REAL,
-      precio_venta      REAL,
-      venta_bruto       REAL,
-      venta_neto        REAL,
-      comision_venta    REAL,
-      irpf              REAL,
-      ganancia_sin_irpf REAL,
-      ganancia_con_irpf REAL
+      coste_total       NUMERIC,
+      comision_compra   NUMERIC,
+      cantidad          NUMERIC,
+      precio_venta      NUMERIC,
+      venta_bruto       NUMERIC,
+      venta_neto        NUMERIC,
+      comision_venta    NUMERIC,
+      irpf              NUMERIC,
+      ganancia_sin_irpf NUMERIC,
+      ganancia_con_irpf NUMERIC
     );
     CREATE TABLE IF NOT EXISTS gastos (
       id        SERIAL PRIMARY KEY,
       user_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       nombre    TEXT NOT NULL,
-      importe   REAL NOT NULL DEFAULT 0,
+      importe   NUMERIC NOT NULL DEFAULT 0,
       categoria TEXT NOT NULL DEFAULT 'Otros'
     );
   `);
 
+  await migrateRealToNumeric();
+  await q(`
+    ALTER TABLE acciones_ops     ADD COLUMN IF NOT EXISTS ticker TEXT;
+    ALTER TABLE fondos_catalogo  ADD COLUMN IF NOT EXISTS simbolo TEXT;
+    ALTER TABLE fondos_traspasos ADD COLUMN IF NOT EXISTS participaciones_origen NUMERIC;
+    ALTER TABLE fondos_traspasos ADD COLUMN IF NOT EXISTS participaciones_destino NUMERIC;
+  `);
+  await market.initSchema();
+  await runOnce('grant-rentabilidad', () => q(
+    `UPDATE users SET permissions = permissions || '["rentabilidad"]'::jsonb
+      WHERE permissions ? 'estadisticas' AND NOT permissions ? 'rentabilidad'`));
+
   // Seed users
   const { rows: [{ n }] } = await q('SELECT COUNT(*) as n FROM users');
   if (parseInt(n) === 0) {
-    const adminHash = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'admin123', 10);
-    const userHash  = await bcrypt.hash(process.env.USER_PASSWORD  || 'user123',  10);
+    // Sin contraseña en el entorno se genera una aleatoria y se muestra una sola vez en el log
+    const seedPassword = (envKey, username) => {
+      if (process.env[envKey]) return process.env[envKey];
+      const pwd = crypto.randomBytes(12).toString('base64url');
+      console.log(`🔑 Contraseña inicial de "${username}": ${pwd}  (cámbiala o define ${envKey})`);
+      return pwd;
+    };
+    const adminName = process.env.ADMIN_USERNAME || 'pepe';
+    const userName  = process.env.USER_USERNAME  || 'padre';
+    const adminHash = await bcrypt.hash(seedPassword('ADMIN_PASSWORD', adminName), 10);
+    const userHash  = await bcrypt.hash(seedPassword('USER_PASSWORD',  userName),  10);
     await q(
       `INSERT INTO users (username, password_hash, is_admin, permissions) VALUES
-       ($1,$2,true, '["dashboard","snapshots","objetivo","estadisticas","operaciones","backup"]'),
-       ($3,$4,false,'["dashboard","estadisticas"]')`,
-      [process.env.ADMIN_USERNAME || 'pepe', adminHash,
-       process.env.USER_USERNAME  || 'padre', userHash]
+       ($1,$2,true, '["dashboard","snapshots","objetivo","estadisticas","rentabilidad","operaciones","backup"]'),
+       ($3,$4,false,'["dashboard","estadisticas","rentabilidad"]')`,
+      [adminName, adminHash, userName, userHash]
     );
     console.log('✅ Usuarios creados');
 
@@ -171,6 +207,43 @@ async function initDB() {
     const { rows: [admin] } = await q('SELECT id FROM users WHERE is_admin=true LIMIT 1');
     const uid = admin.id;
     await seedData(uid);
+  }
+}
+
+// Ejecuta una migración de datos una sola vez (p. ej. conceder un permiso nuevo
+// sin volver a concederlo si el admin lo retira después)
+async function runOnce(name, fn) {
+  await q(`CREATE TABLE IF NOT EXISTS app_migrations (
+    name TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
+  const { rowCount } = await q('SELECT 1 FROM app_migrations WHERE name=$1', [name]);
+  if (rowCount) return;
+  await fn();
+  await q('INSERT INTO app_migrations (name) VALUES ($1)', [name]);
+  console.log(`✅ Migración aplicada: ${name}`);
+}
+
+// Migración única: las columnas REAL (float4, ~7 cifras) pasan a NUMERIC exacto.
+// Se convierte vía texto para conservar la representación decimal más corta (15574.96, no 15574.9599…).
+async function migrateRealToNumeric() {
+  const { rows } = await q(
+    `SELECT table_name, column_name FROM information_schema.columns
+      WHERE table_schema = current_schema() AND data_type = 'real' AND table_name = ANY($1)`,
+    [BACKUP_TABLES]);
+  if (!rows.length) return;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (const { table_name, column_name } of rows) {
+      const col = ident(column_name);
+      await client.query(`ALTER TABLE ${ident(table_name)} ALTER COLUMN ${col} TYPE NUMERIC USING ${col}::text::numeric`);
+    }
+    await client.query('COMMIT');
+    console.log(`✅ Migradas ${rows.length} columnas REAL → NUMERIC`);
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
   }
 }
 
@@ -182,7 +255,7 @@ async function seedData(uid) {
     { mes:'Noviembre 2024',  fecha:'2024-11-29', acciones:15767.49, fondos:3668.42,  ahorro:5293.11 },
     { mes:'Diciembre 2024',  fecha:'2024-12-29', acciones:15734.42, fondos:4022.05,  ahorro:5941.59 },
     { mes:'Enero 2025',      fecha:'2025-01-29', acciones:17085.33, fondos:4636.74,  ahorro:6585.80 },
-    { mes:'Febrero 2025',    fecha:'2025-02-29', acciones:16131.96, fondos:3149.82,  ahorro:8561.94 },
+    { mes:'Febrero 2025',    fecha:'2025-02-28', acciones:16131.96, fondos:3149.82,  ahorro:8561.94 },
     { mes:'Marzo 2025',      fecha:'2025-03-29', acciones:15249.48, fondos:3930.72,  ahorro:8447.31 },
     { mes:'Abril 2025',      fecha:'2025-04-29', acciones:19471.59, fondos:4234.65,  ahorro:2865.76 },
     { mes:'Mayo 2025',       fecha:'2025-05-29', acciones:18473.16, fondos:4368.25,  ahorro:4323.67 },
@@ -236,13 +309,19 @@ async function seedData(uid) {
 }
 
 // ── Middleware ────────────────────────────────────────────────────────────────
+if (IS_PROD) app.set('trust proxy', 1); // detrás del proxy HTTPS de Render
 app.use(express.json());
 app.use(session({
   store: new PgSession({ pool, tableName: 'sessions', createTableIfMissing: false }),
   secret: process.env.SESSION_SECRET || 'mysaver-secret-local',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 }, // 30 días
+  cookie: {
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 días
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: IS_PROD,
+  },
 }));
 
 // Rutas públicas
@@ -259,16 +338,40 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
+// Límite de intentos fallidos por IP (en memoria; suficiente para una sola instancia)
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_FAILS = 10;
+const loginFails = new Map(); // ip -> { count, resetAt }
+
 app.post('/api/auth/login', async (req, res) => {
+  const ip  = req.ip;
+  const now = Date.now();
+  const rec = loginFails.get(ip);
+  if (rec && rec.resetAt > now && rec.count >= LOGIN_MAX_FAILS) {
+    const mins = Math.ceil((rec.resetAt - now) / 60000);
+    return res.status(429).json({ error: `Demasiados intentos. Prueba de nuevo en ${mins} min.` });
+  }
+
   const { username, password } = req.body;
+  if (typeof username !== 'string' || typeof password !== 'string')
+    return res.status(400).json({ error: 'Usuario y contraseña obligatorios' });
   const { rows } = await q('SELECT * FROM users WHERE username=$1', [username]);
   const user = rows[0];
-  if (!user || !await bcrypt.compare(password, user.password_hash))
+  if (!user || !await bcrypt.compare(password, user.password_hash)) {
+    const fresh = !rec || rec.resetAt <= now;
+    loginFails.set(ip, { count: fresh ? 1 : rec.count + 1, resetAt: fresh ? now + LOGIN_WINDOW_MS : rec.resetAt });
     return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
-  req.session.userId   = user.id;
-  req.session.username = user.username;
-  req.session.isAdmin  = user.is_admin;
-  res.json({ username: user.username, isAdmin: user.is_admin, permissions: user.permissions });
+  }
+  loginFails.delete(ip);
+
+  // Nueva sesión tras autenticarse (evita fijación de sesión)
+  req.session.regenerate(err => {
+    if (err) return res.status(500).json({ error: 'No se pudo iniciar sesión' });
+    req.session.userId   = user.id;
+    req.session.username = user.username;
+    req.session.isAdmin  = user.is_admin;
+    res.json({ username: user.username, isAdmin: user.is_admin, permissions: user.permissions });
+  });
 });
 
 app.post('/api/auth/logout', (req, res) => {
@@ -302,7 +405,8 @@ app.put('/api/admin/users/:id/permissions', requireAdmin, async (req, res) => {
 
 app.put('/api/admin/users/:id/password', requireAdmin, async (req, res) => {
   const { password } = req.body;
-  if (!password || password.length < 4) return res.status(400).json({ error: 'Contraseña demasiado corta' });
+  if (typeof password !== 'string' || password.length < 8)
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
   const hash = await bcrypt.hash(password, 10);
   const { rows: [u] } = await q(
     'UPDATE users SET password_hash=$1 WHERE id=$2 RETURNING id,username',
@@ -359,13 +463,14 @@ app.post('/api/acciones', async (req, res) => {
   const { rows: [r] } = await q(`
     INSERT INTO acciones_ops (user_id,accion,fecha_compra,fecha_venta,titulos,precio_compra,comision_compra,
       precio_dolar_compra,comision_divisa_c,precio_venta,comision_venta,precio_dolar_venta,comision_divisa_v,
-      total_compra,total_venta,beneficio)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+      total_compra,total_venta,beneficio,ticker)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
     [req.session.userId,f.accion,f.fecha_compra||null,f.fecha_venta||null,+f.titulos||null,+f.precio_compra||null,
      +f.comision_compra||null,f.precio_dolar_compra?+f.precio_dolar_compra:null,f.comision_divisa_c?+f.comision_divisa_c:null,
      f.precio_venta?+f.precio_venta:null,f.comision_venta?+f.comision_venta:null,
      f.precio_dolar_venta?+f.precio_dolar_venta:null,f.comision_divisa_v?+f.comision_divisa_v:null,
-     f.total_compra?+f.total_compra:null,f.total_venta?+f.total_venta:null,f.beneficio?+f.beneficio:null]);
+     f.total_compra?+f.total_compra:null,f.total_venta?+f.total_venta:null,f.beneficio?+f.beneficio:null,
+     cleanTicker(f.ticker)]);
   res.status(201).json(r);
 });
 app.put('/api/acciones/:id', async (req, res) => {
@@ -373,14 +478,14 @@ app.put('/api/acciones/:id', async (req, res) => {
   const { rows: [r] } = await q(`
     UPDATE acciones_ops SET accion=$1,fecha_compra=$2,fecha_venta=$3,titulos=$4,precio_compra=$5,comision_compra=$6,
       precio_dolar_compra=$7,comision_divisa_c=$8,precio_venta=$9,comision_venta=$10,precio_dolar_venta=$11,
-      comision_divisa_v=$12,total_compra=$13,total_venta=$14,beneficio=$15
+      comision_divisa_v=$12,total_compra=$13,total_venta=$14,beneficio=$15,ticker=$18
     WHERE id=$16 AND user_id=$17 RETURNING *`,
     [f.accion,f.fecha_compra||null,f.fecha_venta||null,+f.titulos||null,+f.precio_compra||null,+f.comision_compra||null,
      f.precio_dolar_compra?+f.precio_dolar_compra:null,f.comision_divisa_c?+f.comision_divisa_c:null,
      f.precio_venta?+f.precio_venta:null,f.comision_venta?+f.comision_venta:null,
      f.precio_dolar_venta?+f.precio_dolar_venta:null,f.comision_divisa_v?+f.comision_divisa_v:null,
      f.total_compra?+f.total_compra:null,f.total_venta?+f.total_venta:null,f.beneficio?+f.beneficio:null,
-     req.params.id,req.session.userId]);
+     req.params.id,req.session.userId,cleanTicker(f.ticker)]);
   if (!r) return res.status(404).json({ error: 'Not found' });
   res.json(r);
 });
@@ -445,11 +550,12 @@ app.post('/api/acciones/:id/vender', async (req, res) => {
       const { rows: [r] } = await client.query(`
         INSERT INTO acciones_ops (user_id,accion,fecha_compra,fecha_venta,titulos,precio_compra,comision_compra,
           precio_dolar_compra,comision_divisa_c,precio_venta,comision_venta,precio_dolar_venta,comision_divisa_v,
-          total_compra,total_venta,beneficio)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+          total_compra,total_venta,beneficio,ticker)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
         [req.session.userId, row.accion, row.fecha_compra, fecha_venta || null, tVender, row.precio_compra,
          ccSold || null, row.precio_dolar_compra, cdcSold || null, pVenta, cv || null,
-         precio_dolar_venta ? +precio_dolar_venta : null, cdv || null, totalCompraSold, totalVentaSold, beneficioSold]);
+         precio_dolar_venta ? +precio_dolar_venta : null, cdv || null, totalCompraSold, totalVentaSold, beneficioSold,
+         row.ticker]);
       venta = r;
     }
 
@@ -605,14 +711,17 @@ app.get('/api/fondos-traspasos', async (req, res) => {
   res.json(rows);
 });
 app.post('/api/fondos-traspasos', async (req, res) => {
-  const { fondo_origen, fondo_destino, fecha, importe } = req.body;
+  const { fondo_origen, fondo_destino, fecha, importe, participaciones_origen, participaciones_destino } = req.body;
   const imp = +importe;
   if (!fondo_origen || !fondo_destino) return res.status(400).json({ error: 'Selecciona fondo origen y destino' });
   if (fondo_origen === fondo_destino) return res.status(400).json({ error: 'El fondo origen y destino deben ser distintos' });
   if (!imp || imp <= 0) return res.status(400).json({ error: 'Importe inválido' });
   const { rows: [r] } = await q(
-    'INSERT INTO fondos_traspasos (user_id,fondo_origen,fondo_destino,fecha,importe) VALUES ($1,$2,$3,$4,$5) RETURNING *',
-    [req.session.userId, fondo_origen, fondo_destino, fecha || null, imp]);
+    `INSERT INTO fondos_traspasos (user_id,fondo_origen,fondo_destino,fecha,importe,participaciones_origen,participaciones_destino)
+     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+    [req.session.userId, fondo_origen, fondo_destino, fecha || null, imp,
+     +participaciones_origen > 0 ? +participaciones_origen : null,
+     +participaciones_destino > 0 ? +participaciones_destino : null]);
   res.status(201).json(r);
 });
 app.delete('/api/fondos-traspasos/:id', async (req, res) => {
@@ -648,11 +757,76 @@ app.delete('/api/gastos/:id', async (req, res) => {
   res.json({ success: true });
 });
 
+// ── API: Mercado (cotizaciones) ──────────────────────────────────────────────
+function cleanTicker(t) {
+  const v = typeof t === 'string' ? t.trim().toUpperCase() : '';
+  return isValidSymbol(v) ? v : null;
+}
+const isIsoDate = (d) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d);
+
+app.get('/api/mercado/buscar', async (req, res) => {
+  const query = String(req.query.q || '').trim().slice(0, 80);
+  if (query.length < 2) return res.json([]);
+  try { res.json(await market.search(query)); }
+  catch (e) { res.status(502).json({ error: `No se pudo buscar la cotización: ${e.message}` }); }
+});
+
+app.get('/api/mercado/precios', async (req, res) => {
+  const symbols = String(req.query.symbols || '').split(',').map(cleanTicker).filter(Boolean).slice(0, 60);
+  try { res.json(await market.getQuotesWithFx(symbols)); }
+  catch (e) { res.status(502).json({ error: `No se pudieron obtener los precios: ${e.message}` }); }
+});
+
+app.get('/api/mercado/historico/:symbol', async (req, res) => {
+  const symbol = cleanTicker(req.params.symbol);
+  if (!symbol) return res.status(400).json({ error: 'Símbolo inválido' });
+  const yearAgo = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
+  const desde = isIsoDate(req.query.desde) && req.query.desde >= '1990-01-01' ? req.query.desde : yearAgo;
+  try { res.json(await market.getHistory(symbol, desde)); }
+  catch (e) { res.status(502).json({ error: `No se pudo obtener el histórico: ${e.message}` }); }
+});
+
+// Vincula una cotización a todas las operaciones de una acción (por nombre)
+app.put('/api/acciones-ticker', async (req, res) => {
+  const { accion, ticker } = req.body;
+  if (typeof accion !== 'string' || !accion) return res.status(400).json({ error: 'Acción obligatoria' });
+  const t = ticker ? cleanTicker(ticker) : null;
+  if (ticker && !t) return res.status(400).json({ error: 'Ticker inválido' });
+  const { rowCount } = await q('UPDATE acciones_ops SET ticker=$1 WHERE user_id=$2 AND accion=$3',
+    [t, req.session.userId, accion]);
+  res.json({ success: true, updated: rowCount });
+});
+
+app.put('/api/fondos-catalogo/:id/simbolo', async (req, res) => {
+  const t = req.body.simbolo ? cleanTicker(req.body.simbolo) : null;
+  if (req.body.simbolo && !t) return res.status(400).json({ error: 'Símbolo inválido' });
+  const { rows: [r] } = await q('UPDATE fondos_catalogo SET simbolo=$1 WHERE id=$2 AND user_id=$3 RETURNING *',
+    [t, req.params.id, req.session.userId]);
+  if (!r) return res.status(404).json({ error: 'Not found' });
+  res.json(r);
+});
+
+// Busca por ISIN la cotización de los fondos del catálogo que aún no la tienen
+app.post('/api/mercado/resolver-fondos', async (req, res) => {
+  const { rows } = await q(
+    `SELECT id, isin FROM fondos_catalogo WHERE user_id=$1 AND simbolo IS NULL AND isin IS NOT NULL AND isin <> ''`,
+    [req.session.userId]);
+  const resolved = [];
+  for (const f of rows) {
+    try {
+      const [hit] = await market.search(f.isin.trim());
+      if (!hit) continue;
+      await q('UPDATE fondos_catalogo SET simbolo=$1 WHERE id=$2 AND user_id=$3', [hit.symbol, f.id, req.session.userId]);
+      resolved.push({ id: f.id, simbolo: hit.symbol });
+    } catch { /* sin conexión con Yahoo: se reintenta en la próxima visita */ }
+  }
+  res.json({ resolved });
+});
+
 // ── API: Backup ───────────────────────────────────────────────────────────────
 async function exportData(userId) {
-  const tables = ['snapshots','acciones_ops','dividendos','etf_compras','fondos_catalogo','etf_ventas','fondos_traspasos','gastos'];
   const data = { version: 3, exported_at: new Date().toISOString(), tables: {} };
-  for (const t of tables) {
+  for (const t of BACKUP_TABLES) {
     const { rows } = await q(`SELECT * FROM ${t} WHERE user_id=$1`, [userId]);
     data.tables[t] = rows;
   }
@@ -668,28 +842,63 @@ app.get('/api/backup/download', async (req, res) => {
   res.json(data);
 });
 
+// Columnas restaurables por tabla, leídas del esquema real (nunca del archivo)
+async function restorableColumns() {
+  const { rows } = await q(
+    `SELECT table_name, column_name FROM information_schema.columns
+      WHERE table_schema = current_schema() AND table_name = ANY($1)
+        AND column_name NOT IN ('id','user_id')`,
+    [BACKUP_TABLES]);
+  const cols = Object.fromEntries(BACKUP_TABLES.map(t => [t, new Set()]));
+  for (const r of rows) cols[r.table_name].add(r.column_name);
+  return cols;
+}
+
 app.post('/api/backup/restore', upload.single('file'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No file' });
+  if (!req.file) return res.status(400).json({ error: 'No se ha recibido ningún archivo' });
+  let data;
   try {
-    const content = fs.readFileSync(req.file.path, 'utf8');
-    fs.unlinkSync(req.file.path);
-    const data = JSON.parse(content);
-    if (!data.tables) return res.status(400).json({ error: 'Formato de backup inválido' });
-    const uid = req.session.userId;
-    const tables = ['etf_ventas','etf_compras','dividendos','acciones_ops','fondos_catalogo','fondos_traspasos','snapshots','gastos'];
-    for (const t of tables) await q(`DELETE FROM ${t} WHERE user_id=$1`, [uid]);
-    for (const [table, rows] of Object.entries(data.tables)) {
+    data = JSON.parse(fs.readFileSync(req.file.path, 'utf8'));
+  } catch {
+    return res.status(400).json({ error: 'El archivo no es un backup JSON válido' });
+  } finally {
+    fs.unlink(req.file.path, () => {});
+  }
+
+  const tables = data && typeof data.tables === 'object' && !Array.isArray(data.tables) ? data.tables : null;
+  if (!tables) return res.status(400).json({ error: 'Formato de backup inválido' });
+  const unknown = Object.keys(tables).filter(t => !BACKUP_TABLES.includes(t));
+  if (unknown.length) return res.status(400).json({ error: `Tablas desconocidas en el backup: ${unknown.join(', ')}` });
+  for (const [t, rows] of Object.entries(tables)) {
+    if (!Array.isArray(rows) || rows.some(r => !r || typeof r !== 'object' || Array.isArray(r)))
+      return res.status(400).json({ error: `Datos inválidos en la tabla ${t}` });
+  }
+
+  const allowed = await restorableColumns();
+  const uid     = req.session.userId;
+  const client  = await pool.connect();
+  try {
+    // Todo o nada: si falla una fila, no se borra nada
+    await client.query('BEGIN');
+    for (const t of BACKUP_TABLES) await client.query(`DELETE FROM ${ident(t)} WHERE user_id=$1`, [uid]);
+    let restored = 0;
+    for (const [table, rows] of Object.entries(tables)) {
       for (const row of rows) {
-        const keys = Object.keys(row).filter(k => k !== 'id' && k !== 'user_id');
+        const keys = Object.keys(row).filter(k => allowed[table].has(k));
         const vals = [uid, ...keys.map(k => row[k])];
-        const cols = ['user_id', ...keys].join(',');
-        const phs  = vals.map((_,i) => `$${i+1}`).join(',');
-        await q(`INSERT INTO ${table} (${cols}) VALUES (${phs})`, vals);
+        const cols = ['user_id', ...keys].map(ident).join(',');
+        const phs  = vals.map((_, i) => `$${i + 1}`).join(',');
+        await client.query(`INSERT INTO ${ident(table)} (${cols}) VALUES (${phs})`, vals);
+        restored++;
       }
     }
-    res.json({ success: true, message: 'Restauración completada.' });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
+    await client.query('COMMIT');
+    res.json({ success: true, message: `Restauración completada (${restored} registros).` });
+  } catch (e) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: `No se ha restaurado nada: ${e.message}` });
+  } finally {
+    client.release();
   }
 });
 
