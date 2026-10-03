@@ -10,6 +10,7 @@ const session      = require('express-session');
 const PgSession    = require('connect-pg-simple')(session);
 const bcrypt       = require('bcryptjs');
 const crypto       = require('crypto');
+const { createMarket, isValidSymbol } = require('./market');
 
 const IS_PROD = process.env.NODE_ENV === 'production';
 if (IS_PROD && !process.env.SESSION_SECRET) {
@@ -31,6 +32,7 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 
 const q = (sql, params) => pool.query(sql, params);
+const market = createMarket(q);
 const ident = (name) => '"' + String(name).replace(/"/g, '""') + '"';
 
 // Tablas con datos del usuario incluidas en backup/restauración
@@ -65,7 +67,7 @@ async function initDB() {
       username      TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
       is_admin      BOOLEAN NOT NULL DEFAULT false,
-      permissions   JSONB NOT NULL DEFAULT '["dashboard","snapshots","objetivo","estadisticas","operaciones","backup"]'
+      permissions   JSONB NOT NULL DEFAULT '["dashboard","snapshots","objetivo","estadisticas","rentabilidad","operaciones","backup"]'
     );
     CREATE TABLE IF NOT EXISTS sessions (
       sid    VARCHAR NOT NULL COLLATE "default",
@@ -168,6 +170,16 @@ async function initDB() {
   `);
 
   await migrateRealToNumeric();
+  await q(`
+    ALTER TABLE acciones_ops     ADD COLUMN IF NOT EXISTS ticker TEXT;
+    ALTER TABLE fondos_catalogo  ADD COLUMN IF NOT EXISTS simbolo TEXT;
+    ALTER TABLE fondos_traspasos ADD COLUMN IF NOT EXISTS participaciones_origen NUMERIC;
+    ALTER TABLE fondos_traspasos ADD COLUMN IF NOT EXISTS participaciones_destino NUMERIC;
+  `);
+  await market.initSchema();
+  await runOnce('grant-rentabilidad', () => q(
+    `UPDATE users SET permissions = permissions || '["rentabilidad"]'::jsonb
+      WHERE permissions ? 'estadisticas' AND NOT permissions ? 'rentabilidad'`));
 
   // Seed users
   const { rows: [{ n }] } = await q('SELECT COUNT(*) as n FROM users');
@@ -185,8 +197,8 @@ async function initDB() {
     const userHash  = await bcrypt.hash(seedPassword('USER_PASSWORD',  userName),  10);
     await q(
       `INSERT INTO users (username, password_hash, is_admin, permissions) VALUES
-       ($1,$2,true, '["dashboard","snapshots","objetivo","estadisticas","operaciones","backup"]'),
-       ($3,$4,false,'["dashboard","estadisticas"]')`,
+       ($1,$2,true, '["dashboard","snapshots","objetivo","estadisticas","rentabilidad","operaciones","backup"]'),
+       ($3,$4,false,'["dashboard","estadisticas","rentabilidad"]')`,
       [adminName, adminHash, userName, userHash]
     );
     console.log('✅ Usuarios creados');
@@ -196,6 +208,18 @@ async function initDB() {
     const uid = admin.id;
     await seedData(uid);
   }
+}
+
+// Ejecuta una migración de datos una sola vez (p. ej. conceder un permiso nuevo
+// sin volver a concederlo si el admin lo retira después)
+async function runOnce(name, fn) {
+  await q(`CREATE TABLE IF NOT EXISTS app_migrations (
+    name TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
+  const { rowCount } = await q('SELECT 1 FROM app_migrations WHERE name=$1', [name]);
+  if (rowCount) return;
+  await fn();
+  await q('INSERT INTO app_migrations (name) VALUES ($1)', [name]);
+  console.log(`✅ Migración aplicada: ${name}`);
 }
 
 // Migración única: las columnas REAL (float4, ~7 cifras) pasan a NUMERIC exacto.
@@ -439,13 +463,14 @@ app.post('/api/acciones', async (req, res) => {
   const { rows: [r] } = await q(`
     INSERT INTO acciones_ops (user_id,accion,fecha_compra,fecha_venta,titulos,precio_compra,comision_compra,
       precio_dolar_compra,comision_divisa_c,precio_venta,comision_venta,precio_dolar_venta,comision_divisa_v,
-      total_compra,total_venta,beneficio)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+      total_compra,total_venta,beneficio,ticker)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
     [req.session.userId,f.accion,f.fecha_compra||null,f.fecha_venta||null,+f.titulos||null,+f.precio_compra||null,
      +f.comision_compra||null,f.precio_dolar_compra?+f.precio_dolar_compra:null,f.comision_divisa_c?+f.comision_divisa_c:null,
      f.precio_venta?+f.precio_venta:null,f.comision_venta?+f.comision_venta:null,
      f.precio_dolar_venta?+f.precio_dolar_venta:null,f.comision_divisa_v?+f.comision_divisa_v:null,
-     f.total_compra?+f.total_compra:null,f.total_venta?+f.total_venta:null,f.beneficio?+f.beneficio:null]);
+     f.total_compra?+f.total_compra:null,f.total_venta?+f.total_venta:null,f.beneficio?+f.beneficio:null,
+     cleanTicker(f.ticker)]);
   res.status(201).json(r);
 });
 app.put('/api/acciones/:id', async (req, res) => {
@@ -453,14 +478,14 @@ app.put('/api/acciones/:id', async (req, res) => {
   const { rows: [r] } = await q(`
     UPDATE acciones_ops SET accion=$1,fecha_compra=$2,fecha_venta=$3,titulos=$4,precio_compra=$5,comision_compra=$6,
       precio_dolar_compra=$7,comision_divisa_c=$8,precio_venta=$9,comision_venta=$10,precio_dolar_venta=$11,
-      comision_divisa_v=$12,total_compra=$13,total_venta=$14,beneficio=$15
+      comision_divisa_v=$12,total_compra=$13,total_venta=$14,beneficio=$15,ticker=$18
     WHERE id=$16 AND user_id=$17 RETURNING *`,
     [f.accion,f.fecha_compra||null,f.fecha_venta||null,+f.titulos||null,+f.precio_compra||null,+f.comision_compra||null,
      f.precio_dolar_compra?+f.precio_dolar_compra:null,f.comision_divisa_c?+f.comision_divisa_c:null,
      f.precio_venta?+f.precio_venta:null,f.comision_venta?+f.comision_venta:null,
      f.precio_dolar_venta?+f.precio_dolar_venta:null,f.comision_divisa_v?+f.comision_divisa_v:null,
      f.total_compra?+f.total_compra:null,f.total_venta?+f.total_venta:null,f.beneficio?+f.beneficio:null,
-     req.params.id,req.session.userId]);
+     req.params.id,req.session.userId,cleanTicker(f.ticker)]);
   if (!r) return res.status(404).json({ error: 'Not found' });
   res.json(r);
 });
@@ -525,11 +550,12 @@ app.post('/api/acciones/:id/vender', async (req, res) => {
       const { rows: [r] } = await client.query(`
         INSERT INTO acciones_ops (user_id,accion,fecha_compra,fecha_venta,titulos,precio_compra,comision_compra,
           precio_dolar_compra,comision_divisa_c,precio_venta,comision_venta,precio_dolar_venta,comision_divisa_v,
-          total_compra,total_venta,beneficio)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+          total_compra,total_venta,beneficio,ticker)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
         [req.session.userId, row.accion, row.fecha_compra, fecha_venta || null, tVender, row.precio_compra,
          ccSold || null, row.precio_dolar_compra, cdcSold || null, pVenta, cv || null,
-         precio_dolar_venta ? +precio_dolar_venta : null, cdv || null, totalCompraSold, totalVentaSold, beneficioSold]);
+         precio_dolar_venta ? +precio_dolar_venta : null, cdv || null, totalCompraSold, totalVentaSold, beneficioSold,
+         row.ticker]);
       venta = r;
     }
 
@@ -685,14 +711,17 @@ app.get('/api/fondos-traspasos', async (req, res) => {
   res.json(rows);
 });
 app.post('/api/fondos-traspasos', async (req, res) => {
-  const { fondo_origen, fondo_destino, fecha, importe } = req.body;
+  const { fondo_origen, fondo_destino, fecha, importe, participaciones_origen, participaciones_destino } = req.body;
   const imp = +importe;
   if (!fondo_origen || !fondo_destino) return res.status(400).json({ error: 'Selecciona fondo origen y destino' });
   if (fondo_origen === fondo_destino) return res.status(400).json({ error: 'El fondo origen y destino deben ser distintos' });
   if (!imp || imp <= 0) return res.status(400).json({ error: 'Importe inválido' });
   const { rows: [r] } = await q(
-    'INSERT INTO fondos_traspasos (user_id,fondo_origen,fondo_destino,fecha,importe) VALUES ($1,$2,$3,$4,$5) RETURNING *',
-    [req.session.userId, fondo_origen, fondo_destino, fecha || null, imp]);
+    `INSERT INTO fondos_traspasos (user_id,fondo_origen,fondo_destino,fecha,importe,participaciones_origen,participaciones_destino)
+     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+    [req.session.userId, fondo_origen, fondo_destino, fecha || null, imp,
+     +participaciones_origen > 0 ? +participaciones_origen : null,
+     +participaciones_destino > 0 ? +participaciones_destino : null]);
   res.status(201).json(r);
 });
 app.delete('/api/fondos-traspasos/:id', async (req, res) => {
@@ -726,6 +755,72 @@ app.delete('/api/gastos/:id', async (req, res) => {
   const { rowCount } = await q('DELETE FROM gastos WHERE id=$1 AND user_id=$2', [req.params.id, req.session.userId]);
   if (!rowCount) return res.status(404).json({ error: 'Not found' });
   res.json({ success: true });
+});
+
+// ── API: Mercado (cotizaciones) ──────────────────────────────────────────────
+function cleanTicker(t) {
+  const v = typeof t === 'string' ? t.trim().toUpperCase() : '';
+  return isValidSymbol(v) ? v : null;
+}
+const isIsoDate = (d) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d);
+
+app.get('/api/mercado/buscar', async (req, res) => {
+  const query = String(req.query.q || '').trim().slice(0, 80);
+  if (query.length < 2) return res.json([]);
+  try { res.json(await market.search(query)); }
+  catch (e) { res.status(502).json({ error: `No se pudo buscar la cotización: ${e.message}` }); }
+});
+
+app.get('/api/mercado/precios', async (req, res) => {
+  const symbols = String(req.query.symbols || '').split(',').map(cleanTicker).filter(Boolean).slice(0, 60);
+  try { res.json(await market.getQuotesWithFx(symbols)); }
+  catch (e) { res.status(502).json({ error: `No se pudieron obtener los precios: ${e.message}` }); }
+});
+
+app.get('/api/mercado/historico/:symbol', async (req, res) => {
+  const symbol = cleanTicker(req.params.symbol);
+  if (!symbol) return res.status(400).json({ error: 'Símbolo inválido' });
+  const yearAgo = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
+  const desde = isIsoDate(req.query.desde) && req.query.desde >= '1990-01-01' ? req.query.desde : yearAgo;
+  try { res.json(await market.getHistory(symbol, desde)); }
+  catch (e) { res.status(502).json({ error: `No se pudo obtener el histórico: ${e.message}` }); }
+});
+
+// Vincula una cotización a todas las operaciones de una acción (por nombre)
+app.put('/api/acciones-ticker', async (req, res) => {
+  const { accion, ticker } = req.body;
+  if (typeof accion !== 'string' || !accion) return res.status(400).json({ error: 'Acción obligatoria' });
+  const t = ticker ? cleanTicker(ticker) : null;
+  if (ticker && !t) return res.status(400).json({ error: 'Ticker inválido' });
+  const { rowCount } = await q('UPDATE acciones_ops SET ticker=$1 WHERE user_id=$2 AND accion=$3',
+    [t, req.session.userId, accion]);
+  res.json({ success: true, updated: rowCount });
+});
+
+app.put('/api/fondos-catalogo/:id/simbolo', async (req, res) => {
+  const t = req.body.simbolo ? cleanTicker(req.body.simbolo) : null;
+  if (req.body.simbolo && !t) return res.status(400).json({ error: 'Símbolo inválido' });
+  const { rows: [r] } = await q('UPDATE fondos_catalogo SET simbolo=$1 WHERE id=$2 AND user_id=$3 RETURNING *',
+    [t, req.params.id, req.session.userId]);
+  if (!r) return res.status(404).json({ error: 'Not found' });
+  res.json(r);
+});
+
+// Busca por ISIN la cotización de los fondos del catálogo que aún no la tienen
+app.post('/api/mercado/resolver-fondos', async (req, res) => {
+  const { rows } = await q(
+    `SELECT id, isin FROM fondos_catalogo WHERE user_id=$1 AND simbolo IS NULL AND isin IS NOT NULL AND isin <> ''`,
+    [req.session.userId]);
+  const resolved = [];
+  for (const f of rows) {
+    try {
+      const [hit] = await market.search(f.isin.trim());
+      if (!hit) continue;
+      await q('UPDATE fondos_catalogo SET simbolo=$1 WHERE id=$2 AND user_id=$3', [hit.symbol, f.id, req.session.userId]);
+      resolved.push({ id: f.id, simbolo: hit.symbol });
+    } catch { /* sin conexión con Yahoo: se reintenta en la próxima visita */ }
+  }
+  res.json({ resolved });
 });
 
 // ── API: Backup ───────────────────────────────────────────────────────────────

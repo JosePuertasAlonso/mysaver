@@ -636,6 +636,76 @@ select.select-auto { width: auto; min-width: 120px; }
 .sale-totals { display: flex; gap: 8px; flex-wrap: wrap; padding: 14px 20px; border-top: 1px solid var(--line); }
 .sale-totals:empty { display: none; }
 
+/* ── Mercado: precios, panel de posición, vincular cotización ─────────── */
+tr.is-clickable { cursor: pointer; }
+.cell-pct { opacity: .75; font-size: 12px; margin-left: 6px; }
+.stale-mark { color: var(--warn); margin-left: 4px; font-size: 13px; vertical-align: -1px; cursor: help; }
+.market-note { font-size: 12.5px; color: var(--text-3); margin: -4px 0 12px 4px; }
+.market-note.is-error { color: var(--warn); }
+.modal-wide { width: 860px; }
+.pos-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.pos-sub { font-size: 12.5px; color: var(--text-2); margin-top: 3px; font-family: var(--mono); }
+.pos-price { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; min-height: 34px; }
+.pos-price-value { font-family: var(--mono); font-size: 28px; font-weight: 500; letter-spacing: -.02em; }
+.pos-change { font-family: var(--mono); font-size: 14px; }
+.pos-updated { font-size: 12.5px; color: var(--text-3); }
+.pos-kpis {
+  display: grid; grid-template-columns: repeat(4, 1fr); margin-bottom: 16px;
+  border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--surface);
+}
+.pos-kpi { padding: 12px 14px; border-left: 1px solid var(--line); min-width: 0; }
+.pos-kpi:first-child { border-left: none; }
+.pos-kpi-label { font-size: 12.5px; color: var(--text-2); margin-bottom: 4px; }
+.pos-kpi-value { font-family: var(--mono); font-size: 16px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pos-kpi-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; font-family: var(--mono); min-height: 16px; }
+.pos-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+.pos-toolbar .subtabs { margin-bottom: 0; }
+.pos-legend { display: flex; gap: 14px; font-size: 12.5px; color: var(--text-2); flex-wrap: wrap; }
+.pos-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.lg-line { width: 14px; height: 2px; background: var(--accent); border-radius: 2px; }
+.lg-dash { width: 14px; height: 0; border-top: 2px dashed var(--warn); }
+.lg-tri { width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; }
+.lg-tri.up { border-bottom: 8px solid var(--gain); }
+.lg-tri.down { border-top: 8px solid var(--loss); }
+.pos-chart { position: relative; height: 300px; }
+.pos-chart .empty-state { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.pos-foot {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--text-3);
+}
+.link-btn { background: none; border: none; color: var(--accent-hi); font: inherit; cursor: pointer; padding: 0; }
+.link-btn:hover { text-decoration: underline; text-underline-offset: 3px; }
+.sym-results { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; max-height: 300px; overflow-y: auto; }
+.sym-results:empty { display: none; }
+.sym-item {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 9px 10px; border-radius: var(--radius-sm); background: transparent; border: 1px solid transparent;
+  color: var(--text); font: inherit; cursor: pointer;
+  transition: background-color var(--dur-fast) ease, border-color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out);
+}
+.sym-item:hover { background: var(--hover); border-color: var(--line); }
+.sym-item:active { transform: scale(.99); }
+.sym-symbol { font-family: var(--mono); font-size: 13.5px; font-weight: 500; }
+.sym-name { font-size: 13px; color: var(--text-2); }
+.sym-meta { font-size: 12px; color: var(--text-3); white-space: nowrap; }
+.input-row { display: flex; gap: 8px; }
+.input-row input { flex: 1; min-width: 0; }
+@media (max-width: 700px) {
+  .pos-kpis { grid-template-columns: 1fr 1fr; }
+  .pos-kpi:nth-child(3) { border-left: none; }
+  .pos-kpi:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .pos-price-value { font-size: 24px; }
+}
+
+/* ── Rentabilidad section ─────────────────────────────────────────────── */
+.rent-note {
+  padding: 14px 20px; border-top: 1px solid var(--line);
+  font-size: 13px; color: var(--text-2); line-height: 1.55;
+}
+.rent-note strong { color: var(--text); font-weight: 500; }
+.rent-flag { color: var(--warn); font-size: 16px; cursor: help; }
+#rentWarn .callout-warn { margin-bottom: 16px; }
+
 /* ── Gastos section ───────────────────────────────────────────────────── */
 .gastos-summary {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-bottom: 24px;
@@ -811,6 +881,10 @@ select.select-auto { width: auto; min-width: 120px; }
       <div tabindex="0" role="button" class="nav-item" data-section="estadisticas">
         <span class="nav-icon"><i class="ph ph-chart-bar" aria-hidden="true"></i></span>
         <span class="nav-text">Estadísticas</span>
+      </div>
+      <div tabindex="0" role="button" class="nav-item" data-section="rentabilidad">
+        <span class="nav-icon"><i class="ph ph-trend-up" aria-hidden="true"></i></span>
+        <span class="nav-text">Rentabilidad</span>
       </div>
       <div tabindex="0" role="button" class="nav-item" data-section="operaciones">
         <span class="nav-icon"><i class="ph ph-arrows-left-right" aria-hidden="true"></i></span>
@@ -1015,6 +1089,7 @@ select.select-auto { width: auto; min-width: 120px; }
           <div class="card" style="margin-bottom:24px">
             <div class="card-header">
               <span class="card-title">Mi cartera de fondos</span>
+              <span class="card-meta" id="fondoCatalogoMeta" style="margin-left:auto"></span>
               <button class="btn btn-ghost btn-sm" onclick="openFondoCatalogoModal()"><i class="ph ph-plus" aria-hidden="true"></i> Añadir fondo</button>
             </div>
             <div id="fondoCatalogoList" style="padding:0"></div>
@@ -1057,7 +1132,7 @@ select.select-auto { width: auto; min-width: 120px; }
         <div class="stats-grid" id="statsHighlights"></div>
         <div class="chart-grid-3 mb-24">
           <div class="card">
-            <div class="card-header"><span class="card-title">Rendimiento mensual (%)</span></div>
+            <div class="card-header"><span class="card-title">Variación mensual del patrimonio (%)</span></div>
             <div class="card-body">
               <div class="chart-wrap" style="height:240px">
                 <canvas id="chartRendimiento"></canvas>
@@ -1091,6 +1166,62 @@ select.select-auto { width: auto; min-width: 120px; }
                 <tbody id="deltaBody"></tbody>
               </table>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── RENTABILIDAD ──────────────────────────────────────────────── -->
+      <div class="section" id="sec-rentabilidad">
+        <div class="card empty-state" id="rentEmpty" style="display:none">
+          <i class="ph ph-trend-up" aria-hidden="true"></i>
+          Necesitas al menos dos snapshots para calcular la rentabilidad.
+        </div>
+        <div id="rentContent">
+          <div class="kpi-grid" id="rentKpis"></div>
+          <div id="rentWarn"></div>
+          <div class="card mb-16">
+            <div class="card-header">
+              <span class="card-title">De dónde viene tu patrimonio</span>
+              <span class="card-meta">Verde: lo que han ganado tus inversiones</span>
+            </div>
+            <div class="card-body">
+              <div class="chart-wrap" style="height:280px">
+                <canvas id="chartRentOrigen"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="card mb-16">
+            <div class="card-header"><span class="card-title">Ahorro frente a ganancia por periodo</span></div>
+            <div class="card-body">
+              <div class="chart-wrap" style="height:240px">
+                <canvas id="chartRentPeriodos"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Detalle por periodo</span></div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Período</th>
+                    <th class="text-right">Aportación</th>
+                    <th class="text-right">Compras netas</th>
+                    <th class="text-right">Dividendos</th>
+                    <th class="text-right">Ganancia</th>
+                    <th class="text-right">Rentabilidad</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="rentBody"></tbody>
+              </table>
+            </div>
+            <p class="rent-note">
+              <strong>Ganancia</strong> = cambio de valor de acciones y fondos − compras netas + dividendos.
+              <strong>Aportación</strong> = el resto de la variación de tu patrimonio (lo que has ahorrado).
+              La rentabilidad de cada periodo pondera el dinero por el tiempo que estuvo invertido (Dietz modificado)
+              y se encadena para el año. Los traspasos entre fondos no cuentan como entrada ni salida.
+            </p>
           </div>
         </div>
       </div>
@@ -1297,7 +1428,16 @@ select.select-auto { width: auto; min-width: 120px; }
 
     <!-- Nombre + títulos -->
     <div class="form-grid" style="margin-bottom:18px">
-      <div class="form-group full"><label>Acción</label><input type="text" id="fa-accion" placeholder="Ej: Santander"></div>
+      <div class="form-group full"><label>Acción</label><input type="text" id="fa-accion" placeholder="Ej: Santander" onblur="suggestTickerFromName()"></div>
+      <div class="form-group full">
+        <label for="fa-ticker">Cotización (opcional)</label>
+        <div class="input-row">
+          <input type="text" id="fa-ticker" class="input-mono" placeholder="Ej: SAN.MC">
+          <button class="btn btn-ghost" type="button" onclick="searchAccionTicker()"><i class="ph ph-magnifying-glass" aria-hidden="true"></i> Buscar</button>
+        </div>
+        <div class="sym-results" id="faTickerResults"></div>
+        <div class="field-hint">Sirve para ver el precio actual y la evolución. Búscala por el nombre de la acción.</div>
+      </div>
       <div class="form-group full"><label>Títulos</label><input type="number" id="fa-titulos" placeholder="0" step="any" oninput="calcTotales()"></div>
     </div>
 
@@ -1498,6 +1638,9 @@ select.select-auto { width: auto; min-width: 120px; }
         <input type="number" id="tr-importe" placeholder="0" step="any" min="0">
         <div id="tr-disponible" class="field-hint"></div>
       </div>
+      <div class="form-group"><label for="tr-part-origen">Participaciones que salen</label><input type="number" id="tr-part-origen" placeholder="opcional" step="any" min="0"></div>
+      <div class="form-group"><label for="tr-part-destino">Participaciones que entran</label><input type="number" id="tr-part-destino" placeholder="opcional" step="any" min="0"></div>
+      <div class="form-group full"><div class="field-hint">Vienen en el justificante del traspaso. Si las dejas vacías se estiman con el valor liquidativo de esa fecha.</div></div>
       <div class="form-group full"><label>Fecha</label><input type="date" id="tr-fecha"></div>
     </div>
     <div class="modal-footer">
@@ -1536,6 +1679,51 @@ select.select-auto { width: auto; min-width: 120px; }
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeGastoModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="saveGasto()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Panel de posición ──────────────────────────────────────────────────── -->
+<div class="overlay" id="posOverlay" onclick="if(event.target===this)closePosicion()">
+  <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="posTitle">
+    <div class="pos-head">
+      <div>
+        <div class="modal-title" id="posTitle" style="margin:0"></div>
+        <div class="pos-sub" id="posSub"></div>
+      </div>
+      <button class="btn btn-quiet btn-icon" onclick="closePosicion()" aria-label="Cerrar"><i class="ph ph-x" aria-hidden="true"></i></button>
+    </div>
+    <div class="pos-price" id="posPrice"></div>
+    <div class="pos-kpis" id="posKpis"></div>
+    <div class="pos-toolbar">
+      <div class="subtabs" id="posRanges"></div>
+      <div class="pos-legend" id="posLegend"></div>
+    </div>
+    <div class="pos-chart">
+      <canvas id="chartPos"></canvas>
+      <div class="empty-state" id="posChartMsg" style="display:none"></div>
+    </div>
+    <div class="pos-foot">
+      <span>Fuente: Yahoo Finance. Los precios pueden tener retraso y los fondos se publican al día siguiente.</span>
+      <button class="link-btn" onclick="relinkPosicion()">Cambiar cotización</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Vincular cotización ────────────────────────────────────────────────── -->
+<div class="overlay" id="linkOverlay" onclick="if(event.target===this)closeLinkModal()">
+  <div class="modal" style="width:540px" role="dialog" aria-modal="true" aria-labelledby="linkTitle">
+    <div class="modal-title" id="linkTitle">Vincular cotización</div>
+    <p class="prose" id="linkDesc" style="margin-bottom:12px"></p>
+    <div class="input-search" style="max-width:none">
+      <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+      <input type="text" id="linkQuery" placeholder="Nombre, ticker o ISIN" aria-label="Buscar cotización"
+        oninput="onLinkInput()" onkeydown="if(event.key==='Enter'){clearTimeout(linkTimer);searchLink()}">
+    </div>
+    <div class="sym-results" id="linkResults"></div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn btn-quiet" onclick="unlinkSymbol()">Quitar vínculo</button>
+      <button class="btn btn-ghost" onclick="closeLinkModal()">Cerrar</button>
     </div>
   </div>
 </div>
@@ -1606,7 +1794,8 @@ const pages = {
   dashboard:    { title: 'Dashboard',          subtitle: 'Resumen de tu patrimonio' },
   snapshots:    { title: 'Snapshots',          subtitle: 'Historial de registros' },
   objetivo:     { title: 'Objetivo',           subtitle: 'Calculadora de metas financieras' },
-  estadisticas: { title: 'Estadísticas',       subtitle: 'Análisis de rendimiento' },
+  estadisticas: { title: 'Estadísticas',       subtitle: 'Evolución del patrimonio total' },
+  rentabilidad: { title: 'Rentabilidad',       subtitle: 'Lo que aportas frente a lo que ganan tus inversiones' },
   operaciones:  { title: 'Operaciones',        subtitle: 'Historial de compra-venta de acciones y fondos' },
   backup:       { title: 'Copia de seguridad', subtitle: 'Descarga o sincroniza tus datos' },
   gastos:       { title: 'Gastos',             subtitle: 'Control de gastos fijos mensuales' },
@@ -1631,6 +1820,7 @@ function navigate(name) {
 
   if (name === 'dashboard')    renderDashboard();
   if (name === 'estadisticas') renderEstadisticas();
+  if (name === 'rentabilidad') renderRentabilidad();
   if (name === 'gastos')       renderGastos();
 }
 
@@ -2269,6 +2459,627 @@ function renderEstadisticas() {
   });
 }
 
+// ── Rentabilidad: aportaciones frente a ganancias ─────────────────────────
+// Para cada par de snapshots consecutivos separa lo que aportaste de lo que
+// generaron tus inversiones (acciones + fondos, a valor de mercado):
+//   ganancia   = valor final − valor inicial − compras netas + dividendos
+//   aportación = variación del patrimonio total − ganancia
+// La rentabilidad de cada periodo usa Dietz modificado (pondera cada flujo por
+// el tiempo que estuvo invertido) y se encadena para el año y el total (TWR).
+const RENT_EXTREME = 0.15; // |rentabilidad| de un periodo que merece revisión
+
+function computeRentabilidad(snaps, ops) {
+  const ts = (d) => (d ? Date.parse(`${d}T00:00:00Z`) : NaN);
+  const flows = [];      // { t, amount }  + entra dinero en inversiones, − sale
+  const income = [];     // { t, amount }  dividendos netos cobrados
+  const undated = [];    // operaciones que no se pueden situar en el tiempo
+  const addFlow = (list, fecha, amount, what) => {
+    if (!amount) return;
+    const t = ts(fecha);
+    if (Number.isNaN(t)) undated.push(what);
+    else list.push({ t, amount });
+  };
+
+  for (const r of ops.acciones || []) {
+    addFlow(flows, r.fecha_compra, +r.total_compra || 0, r.accion);
+    if (r.fecha_venta && +r.total_venta > 0) addFlow(flows, r.fecha_venta, -r.total_venta, r.accion);
+  }
+  for (const r of ops.etfCompras || []) addFlow(flows, r.fecha_compra, +r.importe || 0, r.etf);
+  for (const r of ops.etfVentas || []) {
+    // Lo que vuelve a tu ahorro: venta neta menos la retención de IRPF
+    const cash = (+r.venta_neto || +r.venta_bruto || 0) - (+r.irpf || 0);
+    addFlow(flows, r.fecha_venta, -cash, r.etf);
+  }
+  for (const r of ops.dividendos || []) addFlow(income, r.fecha, +r.neto || 0, r.accion);
+
+  const invested = (s) => (+s.acciones || 0) + (+s.fondos || 0);
+  const totalOf  = (s) => invested(s) + (+s.ahorro || 0);
+
+  const periods = [];
+  for (let i = 1; i < snaps.length; i++) {
+    const a = snaps[i - 1], b = snaps[i];
+    const ta = ts(a.fecha), tb = ts(b.fecha);
+    const flags = [];
+    if (!(tb > ta)) flags.push('Fechas de snapshot no consecutivas');
+
+    const inPeriod = (f) => f.t > ta && f.t <= tb;
+    const weight   = (t) => (tb > ta ? (tb - t) / (tb - ta) : 0);
+    const pFlows   = flows.filter(inPeriod);
+    const pIncome  = income.filter(inPeriod);
+
+    const comprasNetas = pFlows.reduce((s, f) => s + f.amount, 0);
+    const dividendos   = pIncome.reduce((s, f) => s + f.amount, 0);
+    const ganancia     = invested(b) - invested(a) - comprasNetas + dividendos;
+    const aportacion   = (totalOf(b) - totalOf(a)) - ganancia;
+
+    const capital = invested(a)
+      + pFlows.reduce((s, f) => s + f.amount * weight(f.t), 0)
+      - pIncome.reduce((s, f) => s + f.amount * weight(f.t), 0);
+    const rentabilidad = capital > 0 ? ganancia / capital : null;
+    if (rentabilidad === null) flags.push('Sin capital invertido en el periodo');
+    else if (Math.abs(rentabilidad) > RENT_EXTREME) flags.push('Rentabilidad extrema: ¿falta alguna operación?');
+
+    periods.push({ label: b.label, fecha: b.fecha, aportacion, comprasNetas, dividendos, ganancia, rentabilidad, flags });
+  }
+
+  // Series acumuladas: el primer snapshot cuenta entero como aportado
+  const series = [];
+  if (snaps.length) {
+    let aportado = totalOf(snaps[0]), ganado = 0;
+    series.push({ label: snaps[0].label, aportado, ganado, total: totalOf(snaps[0]) });
+    periods.forEach((p, i) => {
+      aportado += p.aportacion;
+      ganado   += p.ganancia;
+      series.push({ label: p.label, aportado, ganado, total: totalOf(snaps[i + 1]) });
+    });
+  }
+
+  const chain = (list) => list.reduce((acc, p) => acc * (1 + (p.rentabilidad ?? 0)), 1) - 1;
+  const last  = snaps[snaps.length - 1];
+  const year  = last ? String(last.fecha).slice(0, 4) : null;
+  const end   = series[series.length - 1] || { aportado: 0, ganado: 0, total: 0 };
+
+  return {
+    periods,
+    series,
+    undated,
+    year,
+    total:        end.total,
+    aportado:     end.aportado,
+    ganado:       end.ganado,
+    rentAnio:     chain(periods.filter(p => String(p.fecha).startsWith(year))),
+    rentTotal:    chain(periods),
+  };
+}
+
+function renderRentabilidad() {
+  const enough = snapshots.length >= 2;
+  document.getElementById('rentEmpty').style.display   = enough ? 'none' : '';
+  document.getElementById('rentContent').style.display = enough ? '' : 'none';
+  if (!enough) return;
+
+  const r = computeRentabilidad(snapshots, { acciones: accionesOps, etfCompras, etfVentas, dividendos });
+  const first    = snapshots[0];
+  const signed   = (v) => (v > 0 ? '+' : '') + fmt(v);
+  const signedSh = (v) => (v > 0 ? '+' : '') + fmtShort(v);
+  const pctOf    = (x) => (x === null ? '—' : fmtPct(x * 100));
+  const tone     = (v) => (v > 0 ? 'pos' : v < 0 ? 'neg' : '');
+
+  const kpis = [
+    { label: 'Patrimonio actual',  value: fmtShort(r.total),   title: fmt(r.total),   clr: '#ECEDEE', sub: `${snapshots.length} snapshots` },
+    { label: 'Aportado acumulado', value: fmtShort(r.aportado), title: fmt(r.aportado), clr: '#9A9DA5', sub: `desde ${esc(first.label)}` },
+    { label: 'Ganancia acumulada', value: signedSh(r.ganado),  title: signed(r.ganado), clr: '#3FCF8E', cls: tone(r.ganado),
+      sub: r.aportado > 0 ? `${fmtPct((r.ganado / r.aportado) * 100)} sobre lo aportado` : '' },
+    { label: `Rentabilidad ${esc(r.year)}`, value: pctOf(r.rentAnio), title: '', clr: '#5B8CFF', cls: tone(r.rentAnio),
+      sub: `Desde el inicio: ${pctOf(r.rentTotal)}` },
+  ];
+  document.getElementById('rentKpis').innerHTML = kpis.map(k => `
+    <div class="kpi-card" style="--accent-clr:${k.clr}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value ${k.cls || ''}" title="${k.title}">${k.value}</div>
+      <div class="kpi-delta neu">${k.sub}</div>
+    </div>`).join('');
+
+  const names = [...new Set(r.undated)];
+  document.getElementById('rentWarn').innerHTML = names.length ? `
+    <div class="callout-warn">
+      <i class="ph ph-warning" aria-hidden="true"></i>
+      <span>${r.undated.length} operación${r.undated.length !== 1 ? 'es' : ''} sin fecha no se ha${r.undated.length !== 1 ? 'n' : ''} tenido en cuenta:
+        <strong>${names.slice(0, 5).map(esc).join(', ')}${names.length > 5 ? '…' : ''}</strong>. Añade la fecha para que el cálculo sea exacto.</span>
+    </div>` : '';
+
+  document.getElementById('rentBody').innerHTML = r.periods.map(p => `
+    <tr>
+      <td class="fw-700">${esc(p.label)}</td>
+      <td class="text-right">${signed(p.aportacion)}</td>
+      <td class="text-right text-muted">${p.comprasNetas ? signed(p.comprasNetas) : '—'}</td>
+      <td class="text-right text-muted">${p.dividendos ? fmt(p.dividendos) : '—'}</td>
+      <td class="text-right"><span class="${tone(p.ganancia)}">${signed(p.ganancia)}</span></td>
+      <td class="text-right"><span class="${tone(p.rentabilidad)}">${pctOf(p.rentabilidad)}</span></td>
+      <td>${p.flags.length ? `<i class="ph ph-warning rent-flag" title="${esc(p.flags.join('. '))}" aria-label="${esc(p.flags.join('. '))}"></i>` : ''}</td>
+    </tr>`).join('');
+
+  renderChartRentOrigen(r.series);
+  renderChartRentPeriodos(r.periods);
+}
+
+function renderChartRentOrigen(series) {
+  destroyChart('rentOrigen');
+  const ctx = document.getElementById('chartRentOrigen').getContext('2d');
+  charts.rentOrigen = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: series.map(s => s.label),
+      datasets: [
+        { label: 'Aportado', data: series.map(s => s.aportado), borderColor: '#9A9DA5', borderDash: [4, 4],
+          borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4, tension: 0.3, fill: false },
+        { label: 'Patrimonio', data: series.map(s => s.total), borderColor: '#5B8CFF', borderWidth: 2,
+          pointRadius: 0, pointHoverRadius: 5, pointBackgroundColor: '#5B8CFF', pointBorderColor: '#131417', tension: 0.3,
+          // Relleno entre patrimonio y aportado: verde si has ganado, rojo si has perdido
+          fill: { target: 0, above: 'rgba(63,207,142,.16)', below: 'rgba(242,85,90,.16)' } },
+      ],
+    },
+    options: {
+      ...chartDefaults(),
+      plugins: {
+        ...chartDefaults().plugins,
+        tooltip: {
+          ...chartDefaults().plugins.tooltip,
+          callbacks: {
+            label: (c) => ` ${c.dataset.label}: ${fmt(c.raw)}`,
+            afterBody: (items) => {
+              const s = series[items[0].dataIndex];
+              return `Ganado: ${s.ganado > 0 ? '+' : ''}${fmt(s.ganado)}`;
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+function renderChartRentPeriodos(periods) {
+  destroyChart('rentPeriodos');
+  const ctx = document.getElementById('chartRentPeriodos').getContext('2d');
+  charts.rentPeriodos = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: periods.map(p => p.label),
+      datasets: [
+        { label: 'Aportación (ahorro)', data: periods.map(p => +p.aportacion.toFixed(2)),
+          backgroundColor: '#5B8CFF', borderRadius: 3, maxBarThickness: 22 },
+        { label: 'Ganancia de inversiones', data: periods.map(p => +p.ganancia.toFixed(2)),
+          backgroundColor: periods.map(p => (p.ganancia >= 0 ? '#3FCF8E' : '#F2555A')), borderRadius: 3, maxBarThickness: 22 },
+      ],
+    },
+    options: {
+      ...chartDefaults(),
+      plugins: {
+        ...chartDefaults().plugins,
+        legend: {
+          labels: {
+            ...chartDefaults().plugins.legend.labels,
+            // La serie de ganancia tiene un color por barra: leyenda con colores fijos
+            generateLabels: (chart) => chart.data.datasets.map((d, i) => ({
+              text: d.label, fillStyle: i === 0 ? '#5B8CFF' : '#3FCF8E', strokeStyle: 'transparent',
+              fontColor: '#9A9DA5', datasetIndex: i, hidden: !chart.isDatasetVisible(i),
+            })),
+          },
+        },
+        tooltip: {
+          ...chartDefaults().plugins.tooltip,
+          callbacks: { label: (c) => ` ${c.dataset.label}: ${c.raw > 0 ? '+' : ''}${fmt(c.raw)}` },
+        },
+      },
+    },
+  });
+}
+
+// ── Mercado: precios actuales (Yahoo Finance vía /api/mercado) ────────────
+const market = { quotes: {}, fx: { EUR: 1 }, hist: {}, histFrom: {}, loading: null, error: null, updatedAt: null };
+
+const openLots = () => accionesOps.filter(r => !r.fecha_venta);
+const isoDaysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+
+function marketSymbols() {
+  const s = new Set();
+  openLots().forEach(r => r.ticker && s.add(r.ticker));
+  fondosCatalogo.forEach(f => f.simbolo && s.add(f.simbolo));
+  return [...s];
+}
+
+// Carga precios (y vincula fondos por ISIN la primera vez). Nunca lanza: si falla, guarda el error.
+function loadMarket() {
+  if (market.loading) return market.loading;
+  market.loading = (async () => {
+    try {
+      if (fondosCatalogo.some(f => f.isin && !f.simbolo)) {
+        const r = await fetch('/api/mercado/resolver-fondos', { method: 'POST' }).then(r => r.json());
+        if (r.resolved?.length) await loadFondosCatalogo();
+      }
+      const symbols = marketSymbols();
+      if (symbols.length) {
+        const data = await fetch(`/api/mercado/precios?symbols=${encodeURIComponent(symbols.join(','))}`).then(r => r.json());
+        if (data.error) throw new Error(data.error);
+        Object.assign(market.quotes, data.quotes);
+        Object.assign(market.fx, data.fx);
+        market.updatedAt = new Date();
+      }
+      await ensureFundHistory();
+      market.error = null;
+    } catch (e) {
+      market.error = e.message;
+    } finally {
+      market.loading = null;
+    }
+  })();
+  return market.loading;
+}
+
+function refreshMarketViews() {
+  return loadMarket().then(() => { renderAccionesGroups(); renderFondoCatalogoList(); });
+}
+
+const quoteOf = (sym) => { const q = sym && market.quotes[sym]; return q && q.price != null ? q : null; };
+const fxOf    = (cur) => market.fx[cur || 'EUR'] ?? null;
+function priceEur(sym) {
+  const q = quoteOf(sym);
+  const fx = q ? fxOf(q.currency) : null;
+  return q && fx != null ? q.price * fx : null;
+}
+// `ref` decide los decimales (p. ej. la variación del día usa los del precio)
+function fmtMoney(v, currency = 'EUR', ref = v) {
+  if (v == null || isNaN(v)) return '—';
+  const digits = Math.abs(ref) < 10 ? 4 : 2;
+  try {
+    return new Intl.NumberFormat('es-ES', { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: digits }).format(v);
+  } catch { return `${fmtN(v, digits)} ${currency}`; }
+}
+const signedEur = (v) => (v > 0 ? '+' : '') + fmt(v);
+const toneOf    = (v) => (v > 0 ? 'pos' : v < 0 ? 'neg' : '');
+function staleMark(q) {
+  const when = q.fetchedAt ? new Date(q.fetchedAt).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  return `<i class="ph ph-clock-counter-clockwise stale-mark" title="No se pudo actualizar. Último precio: ${esc(when)}" aria-label="Precio no actualizado"></i>`;
+}
+function plusCell(plus, base) {
+  if (plus == null) return '—';
+  const pct = base ? (plus / base) * 100 : null;
+  return `<span class="${toneOf(plus)}">${signedEur(plus)}${pct != null ? `<span class="cell-pct">${fmtPct(pct)}</span>` : ''}</span>`;
+}
+
+// ── Histórico diario (para gráficas y para estimar participaciones) ───────
+async function loadHist(sym, desde) {
+  if (market.hist[sym] && market.histFrom[sym] <= desde) return market.hist[sym];
+  const data = await fetch(`/api/mercado/historico/${encodeURIComponent(sym)}?desde=${desde}`).then(r => r.json());
+  if (data.error) throw new Error(data.error);
+  market.hist[sym] = data.points;
+  market.histFrom[sym] = desde;
+  return data.points;
+}
+// Valor liquidativo en una fecha: último cierre igual o anterior
+function navAt(sym, fecha) {
+  const h = market.hist[sym];
+  if (!h || !h.length || !fecha || fecha < h[0].fecha) return null;
+  let best = null;
+  for (const p of h) { if (p.fecha <= fecha) best = p.close; else break; }
+  return best;
+}
+
+// ── Fondos: participaciones actuales ──────────────────────────────────────
+// Si una operación no guarda participaciones (traspasos, compras antiguas) se
+// estiman como importe ÷ valor liquidativo de ese día.
+function fundEvents(nombre) {
+  const ev = [];
+  for (const c of etfCompras.filter(c => c.etf === nombre))
+    ev.push({ type: 'buy', fecha: c.fecha_compra, units: +c.titulos || null, amount: +c.importe || 0 });
+  for (const v of etfVentas.filter(v => v.etf === nombre))
+    ev.push({ type: 'sell', fecha: v.fecha_venta, units: +v.cantidad || null, amount: +v.venta_bruto || +v.venta_neto || 0 });
+  for (const t of traspasos) {
+    if (t.fondo_origen === nombre)  ev.push({ type: 'out', fecha: t.fecha, units: +t.participaciones_origen || null, amount: +t.importe || 0 });
+    if (t.fondo_destino === nombre) ev.push({ type: 'in',  fecha: t.fecha, units: +t.participaciones_destino || null, amount: +t.importe || 0 });
+  }
+  return ev;
+}
+function fundUnits(f) {
+  let units = 0, estimated = false, unknown = false;
+  for (const e of fundEvents(f.nombre)) {
+    let u = e.units;
+    if (u == null) {
+      const nav = f.simbolo ? navAt(f.simbolo, e.fecha) : null;
+      if (!nav || !e.amount) { unknown = true; continue; }
+      u = e.amount / nav; estimated = true;
+    }
+    units += (e.type === 'buy' || e.type === 'in') ? u : -u;
+  }
+  return { units: Math.max(0, units), estimated, unknown };
+}
+async function ensureFundHistory() {
+  await Promise.all(fondosCatalogo.filter(f => f.simbolo).map(async f => {
+    const dates = fundEvents(f.nombre).filter(e => e.units == null && e.fecha).map(e => e.fecha).sort();
+    if (!dates.length) return;
+    try { await loadHist(f.simbolo, dates[0]); } catch { /* sin histórico: participaciones desconocidas */ }
+  }));
+}
+function fundValuation(f) {
+  const coste = fondosPosiciones[f.nombre] || 0;
+  const { units, estimated, unknown } = fundUnits(f);
+  const pe = priceEur(f.simbolo);
+  const valor = !unknown && pe != null ? units * pe : null;
+  return { coste, units, estimated, unknown, valor, plus: valor != null ? valor - coste : null };
+}
+
+// ── Panel de posición: precio, plusvalía y evolución ──────────────────────
+const POS_RANGES = [
+  { id: '1m', label: '1M', days: 31 },
+  { id: '6m', label: '6M', days: 183 },
+  { id: '1a', label: '1A', days: 365 },
+  { id: 'compra', label: 'Desde la compra' },
+];
+let posState = null;
+
+function buildPosicion(kind, key) {
+  if (kind === 'accion') {
+    const all  = accionesOps.filter(r => r.accion === key);
+    const lots = all.filter(r => !r.fecha_venta);
+    const sym  = all.find(r => r.ticker)?.ticker;
+    const titulos = lots.reduce((s, r) => s + (+r.titulos || 0), 0);
+    const coste   = lots.reduce((s, r) => s + (+r.total_compra || 0), 0);
+    const q = quoteOf(sym);
+    // Precio medio en la moneda de cotización (precio_compra se guarda en € con su tipo de cambio)
+    let avgNative = null;
+    if (titulos && q) {
+      if (q.currency === 'EUR') avgNative = coste / titulos;
+      else if (lots.every(r => +r.precio_dolar_compra)) avgNative = lots.reduce((s, r) => s + r.total_compra / r.precio_dolar_compra, 0) / titulos;
+    }
+    const events = [
+      ...all.filter(r => r.fecha_compra).map(r => ({ type: 'buy', fecha: r.fecha_compra, text: `Compra · ${fmtN(r.titulos, 0)} títulos` })),
+      ...all.filter(r => r.fecha_venta).map(r => ({ type: 'sell', fecha: r.fecha_venta, text: `Venta · ${fmtN(r.titulos, 0)} títulos` })),
+    ];
+    const firstBuy = lots.map(r => r.fecha_compra).filter(Boolean).sort()[0];
+    const pe = priceEur(sym);
+    const valor = pe != null ? titulos * pe : null;
+    return { kind, key, name: key, sym, unitsLabel: 'Títulos', units: titulos, estimated: false, coste, valor,
+             plus: valor != null ? valor - coste : null, avgNative, events, firstBuy };
+  }
+  const f = fondosCatalogo.find(x => x.nombre === key);
+  const v = fundValuation(f);
+  const q = quoteOf(f.simbolo);
+  const labels = { buy: 'Compra', sell: 'Venta', in: 'Traspaso entrante', out: 'Traspaso saliente' };
+  const events = fundEvents(f.nombre).filter(e => e.fecha).map(e => ({ type: e.type, fecha: e.fecha, text: `${labels[e.type]} · ${fmt(e.amount)}` }));
+  const firstBuy = events.filter(e => e.type === 'buy' || e.type === 'in').map(e => e.fecha).sort()[0];
+  return { kind, key, name: f.nombre, sym: f.simbolo, isin: f.isin, fondoId: f.id, unitsLabel: 'Participaciones', units: v.units,
+           estimated: v.estimated, coste: v.coste, valor: v.valor, plus: v.plus,
+           avgNative: q && q.currency === 'EUR' && v.units ? v.coste / v.units : null, events, firstBuy };
+}
+
+function openPosicion(kind, key) {
+  posState = { kind, key, range: 'compra' };
+  document.getElementById('posOverlay').classList.add('open');
+  renderPosicion();
+}
+function closePosicion() {
+  document.getElementById('posOverlay').classList.remove('open');
+  destroyChart('pos');
+  posState = null;
+}
+function setPosRange(id) { if (!posState) return; posState.range = id; renderPosicion(); }
+
+async function renderPosicion() {
+  const p = buildPosicion(posState.kind, posState.key);
+  const q = quoteOf(p.sym);
+  document.getElementById('posTitle').textContent = p.name;
+  document.getElementById('posSub').textContent = [p.sym, q?.exchange, p.isin].filter(Boolean).join(' · ');
+
+  const change = q && q.prevClose ? q.price - q.prevClose : null;
+  const changePct = change != null ? (change / q.prevClose) * 100 : null;
+  const eurHint = q && q.currency !== 'EUR' && priceEur(p.sym) != null ? `<span class="pos-updated">≈ ${fmt(priceEur(p.sym))}</span>` : '';
+  const when = q?.marketTime ? new Date(q.marketTime).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  document.getElementById('posPrice').innerHTML = q ? `
+    <span class="pos-price-value">${fmtMoney(q.price, q.currency)}</span>
+    ${change != null ? `<span class="pos-change ${toneOf(change)}">${change > 0 ? '+' : ''}${fmtMoney(change, q.currency, q.price)} (${fmtPct(changePct)})</span>` : ''}
+    ${eurHint}
+    <span class="pos-updated">${q.stale ? 'Sin actualizar · ' : ''}${esc(when)}</span>` :
+    `<span class="text-muted">Sin precio disponible${market.error ? `: ${esc(market.error)}` : ''}</span>`;
+
+  const kpi = (label, value, sub = '', cls = '') =>
+    `<div class="pos-kpi"><div class="pos-kpi-label">${label}</div><div class="pos-kpi-value ${cls}">${value}</div><div class="pos-kpi-sub">${sub}</div></div>`;
+  document.getElementById('posKpis').innerHTML = [
+    kpi(p.unitsLabel, `${p.estimated ? '≈ ' : ''}${fmtN(p.units, p.kind === 'fondo' ? 4 : 0)}`, p.estimated ? 'estimadas' : ''),
+    kpi('Precio medio', p.units ? fmt(p.coste / p.units) : '—', 'con comisiones'),
+    kpi('Valor actual', p.valor != null ? fmt(p.valor) : '—', `coste ${fmt(p.coste)}`),
+    kpi('Plusvalía', p.plus != null ? signedEur(p.plus) : '—', p.plus != null && p.coste ? fmtPct((p.plus / p.coste) * 100) : '', toneOf(p.plus)),
+  ].join('');
+
+  document.getElementById('posRanges').innerHTML = POS_RANGES.map(r =>
+    `<button class="subtab ${posState.range === r.id ? 'active' : ''}" onclick="setPosRange('${r.id}')">${r.label}</button>`).join('');
+
+  const msg = document.getElementById('posChartMsg');
+  const canvas = document.getElementById('chartPos');
+  if (!p.sym) {
+    destroyChart('pos'); canvas.style.display = 'none';
+    msg.style.display = ''; msg.textContent = 'Vincula una cotización para ver la evolución.';
+    return;
+  }
+  const range = POS_RANGES.find(r => r.id === posState.range);
+  const desde = range.days ? isoDaysAgo(range.days) : (p.firstBuy || isoDaysAgo(365));
+  msg.style.display = ''; msg.textContent = 'Cargando histórico…';
+  try {
+    const points = (await loadHist(p.sym, desde)).filter(x => x.fecha >= desde);
+    if (!posState || posState.key !== p.key) return; // el usuario cerró o cambió de posición
+    if (!points.length) throw new Error('Sin datos para este periodo');
+    msg.style.display = 'none'; canvas.style.display = 'block';
+    renderChartPos(p, points, q);
+  } catch (e) {
+    destroyChart('pos'); canvas.style.display = 'none';
+    msg.style.display = ''; msg.textContent = `No se pudo cargar el histórico: ${e.message}`;
+  }
+}
+
+function renderChartPos(p, points, q) {
+  destroyChart('pos');
+  const labels = points.map(x => x.fecha);
+  const closes = points.map(x => x.close);
+  const cur = q?.currency || 'EUR';
+  // Sitúa cada operación en el primer día cotizado igual o posterior a su fecha
+  const markers = (type) => {
+    const data = new Array(labels.length).fill(null), info = {};
+    for (const e of p.events.filter(e => e.type === type)) {
+      const i = labels.findIndex(d => d >= e.fecha);
+      if (i < 0 || (i === 0 && e.fecha < labels[0])) continue;
+      data[i] = closes[i]; info[i] = (info[i] ? info[i] + ' / ' : '') + e.text;
+    }
+    return { data, info };
+  };
+  const buys = markers('buy'), sells = markers('sell'), ins = markers('in'), outs = markers('out');
+  const long = labels.length > 70;
+  const ctx = document.getElementById('chartPos').getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 300);
+  grad.addColorStop(0, 'rgba(91,140,255,.18)');
+  grad.addColorStop(1, 'rgba(91,140,255,0)');
+  const markerSet = (label, m, color, style, rotation = 0) => ({
+    label, data: m.data, info: m.info, showLine: false, pointStyle: style, rotation,
+    pointRadius: 6, pointHoverRadius: 8, pointBackgroundColor: color, pointBorderColor: '#1A1C20', pointBorderWidth: 1.5,
+  });
+  charts.pos = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Precio', data: closes, borderColor: '#5B8CFF', backgroundColor: grad, fill: true, borderWidth: 2,
+          tension: 0.2, pointRadius: 0, pointHoverRadius: 4, pointBackgroundColor: '#5B8CFF' },
+        ...(p.avgNative ? [{ label: 'Tu precio medio', data: labels.map(() => p.avgNative), borderColor: '#E8A84A',
+          borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 0, fill: false }] : []),
+        markerSet('Compra', buys, '#3FCF8E', 'triangle'),
+        markerSet('Venta', sells, '#F2555A', 'triangle', 180),
+        markerSet('Traspaso entrante', ins, '#3FCF8E', 'rectRot'),
+        markerSet('Traspaso saliente', outs, '#F2555A', 'rectRot'),
+      ],
+    },
+    options: {
+      ...chartDefaults(),
+      plugins: {
+        ...chartDefaults().plugins,
+        legend: { display: false },
+        tooltip: {
+          ...chartDefaults().plugins.tooltip,
+          filter: (item) => item.raw != null,
+          callbacks: {
+            title: (items) => new Date(items[0].label).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
+            label: (c) => c.dataset.info ? ` ${c.dataset.info[c.dataIndex]}` : ` ${c.dataset.label}: ${fmtMoney(c.raw, cur)}`,
+          },
+        },
+      },
+      scales: {
+        x: { ...chartDefaults().scales.x, ticks: { ...chartDefaults().scales.x.ticks, maxTicksLimit: 7,
+          callback: function (v) {
+            const d = new Date(this.getLabelForValue(v));
+            return d.toLocaleDateString('es-ES', long ? { month: 'short', year: '2-digit' } : { day: 'numeric', month: 'short' });
+          } } },
+        y: { ...chartDefaults().scales.y, ticks: { ...chartDefaults().scales.y.ticks, callback: (v) => fmtMoney(v, cur) } },
+      },
+    },
+  });
+  const shown = (m) => m.data.some(v => v != null);
+  document.getElementById('posLegend').innerHTML = [
+    '<span><i class="lg-line"></i>Precio</span>',
+    p.avgNative ? '<span><i class="lg-dash"></i>Tu precio medio</span>' : '',
+    shown(buys) || shown(ins) ? '<span><i class="lg-tri up"></i>Compra / entrada</span>' : '',
+    shown(sells) || shown(outs) ? '<span><i class="lg-tri down"></i>Venta / salida</span>' : '',
+  ].join('');
+}
+
+function relinkPosicion() {
+  if (!posState) return;
+  const p = buildPosicion(posState.kind, posState.key);
+  closePosicion();
+  if (p.kind === 'accion') openLinkModal('accion', p.key);
+  else openLinkModal('fondo', p.fondoId);
+}
+
+// ── Vincular cotización (buscar en Yahoo por nombre, ticker o ISIN) ───────
+let linkState = null;
+let linkTimer = null;
+
+function openLinkModal(kind, key) {
+  linkState = { kind, key };
+  let query = '', desc = '';
+  if (kind === 'accion') {
+    query = key;
+    desc = `Elige la cotización de <strong>${esc(key)}</strong>. Se aplicará a todas sus operaciones.`;
+  } else {
+    const f = fondosCatalogo.find(x => x.id === key);
+    query = f?.isin || f?.nombre || '';
+    desc = `Elige la cotización de <strong>${esc(f?.nombre)}</strong>.`;
+  }
+  document.getElementById('linkDesc').innerHTML = desc;
+  document.getElementById('linkQuery').value = query;
+  document.getElementById('linkOverlay').classList.add('open');
+  searchLink();
+}
+function closeLinkModal() { document.getElementById('linkOverlay').classList.remove('open'); linkState = null; }
+function onLinkInput() { clearTimeout(linkTimer); linkTimer = setTimeout(searchLink, 350); }
+
+async function searchSymbols(query, container, onPickName) {
+  container.innerHTML = '<div class="field-hint">Buscando…</div>';
+  try {
+    const res = await fetch(`/api/mercado/buscar?q=${encodeURIComponent(query)}`).then(r => r.json());
+    if (res.error) throw new Error(res.error);
+    container.innerHTML = res.length ? res.map(x => `
+      <button type="button" class="sym-item" onclick="${onPickName}(${jsArg(x.symbol)})">
+        <span><span class="sym-symbol">${esc(x.symbol)}</span> <span class="sym-name">${esc(x.name)}</span></span>
+        <span class="sym-meta">${esc([x.exchange, x.type].filter(Boolean).join(' · '))}</span>
+      </button>`).join('') : '<div class="field-hint">Sin resultados. Prueba con el ticker o el ISIN.</div>';
+  } catch (e) {
+    container.innerHTML = `<div class="field-hint" style="color:var(--loss)">${esc(e.message)}</div>`;
+  }
+}
+function searchLink() {
+  const query = document.getElementById('linkQuery').value.trim();
+  if (query.length < 2) { document.getElementById('linkResults').innerHTML = ''; return; }
+  searchSymbols(query, document.getElementById('linkResults'), 'pickLinkSymbol');
+}
+async function pickLinkSymbol(symbol) {
+  if (!linkState) return;
+  const { kind, key } = linkState;
+  const res = kind === 'accion'
+    ? await fetch('/api/acciones-ticker', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: key, ticker: symbol }) })
+    : await fetch(`/api/fondos-catalogo/${key}/simbolo`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ simbolo: symbol }) });
+  if (!res.ok) { toast('No se pudo vincular la cotización', 'error'); return; }
+  toast(`Cotización vinculada: ${symbol}`);
+  closeLinkModal();
+  await loadOperaciones();
+  renderOperaciones();
+}
+async function unlinkSymbol() {
+  if (!linkState) return;
+  const { kind, key } = linkState;
+  if (kind === 'accion') await fetch('/api/acciones-ticker', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: key, ticker: null }) });
+  else await fetch(`/api/fondos-catalogo/${key}/simbolo`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ simbolo: null }) });
+  toast('Vínculo eliminado');
+  closeLinkModal();
+  await loadOperaciones();
+  renderOperaciones();
+}
+
+// Ticker en el formulario de operación
+function searchAccionTicker() {
+  const name = document.getElementById('fa-ticker').value.trim() || document.getElementById('fa-accion').value.trim();
+  if (name.length < 2) { toast('Escribe el nombre de la acción para buscar', 'error'); return; }
+  searchSymbols(name, document.getElementById('faTickerResults'), 'pickAccionTicker');
+}
+function pickAccionTicker(symbol) {
+  document.getElementById('fa-ticker').value = symbol;
+  document.getElementById('faTickerResults').innerHTML = '';
+}
+// Si la acción ya tiene cotización en otras operaciones, se propone la misma
+function suggestTickerFromName() {
+  const tickerEl = document.getElementById('fa-ticker');
+  if (tickerEl.value) return;
+  const name = document.getElementById('fa-accion').value.trim();
+  const known = accionesOps.find(r => r.accion === name && r.ticker);
+  if (known) tickerEl.value = known.ticker;
+}
+
 // ── Operaciones data ──────────────────────────────────────────────────────
 let accionesOps = [];
 let dividendos  = [];
@@ -2312,6 +3123,7 @@ function switchSubtab(name) {
 // ── Render Operaciones ────────────────────────────────────────────────────
 function renderOperaciones() {
   requestAnimationFrame(positionSubtabIndicator);
+  refreshMarketViews();
   renderAccionesGroups();
   renderDividendosTable();
   renderFondoCatalogoList();
@@ -2367,11 +3179,11 @@ function renderAccionesGroups() {
 
   container.innerHTML = years.map(yr => {
     const rows    = grouped[yr];
-    const isActuales = yr === '__actuales__';
-    const label   = isActuales ? 'Actuales' : yr;
+    if (yr === '__actuales__') return renderAccionesActualesGroup(rows);
+    const label   = yr;
     const totalC  = rows.reduce((s,r) => s + (r.total_compra || 0), 0);
-    const totalV  = rows.reduce((s,r) => s + (!isActuales ? (r.total_venta || 0) : 0), 0);
-    const totalB  = rows.reduce((s,r) => s + (!isActuales ? (r.beneficio   || 0) : 0), 0);
+    const totalV  = rows.reduce((s,r) => s + (r.total_venta || 0), 0);
+    const totalB  = rows.reduce((s,r) => s + (r.beneficio   || 0), 0);
     const bSign   = totalB >= 0 ? 'pos' : 'neg';
 
     const trs = rows.map(r => `
@@ -2403,11 +3215,8 @@ function renderAccionesGroups() {
           <span class="year-label">${esc(label)}</span>
           <div class="year-summary">
             <span>Invertido: <strong>${fmt(totalC)}</strong></span>
-            ${isActuales
-              ? `<span class="is-open">${rows.length} posición${rows.length !== 1 ? 'es' : ''} abierta${rows.length !== 1 ? 's' : ''}</span>`
-              : `<span>Recuperado: <strong>${fmt(totalV)}</strong></span>
-                 <span class="${bSign}">Beneficio: <strong>${totalB >= 0 ? '+' : ''}${fmt(totalB)}</strong></span>`
-            }
+            <span>Recuperado: <strong>${fmt(totalV)}</strong></span>
+            <span class="${bSign}">Beneficio: <strong>${totalB >= 0 ? '+' : ''}${fmt(totalB)}</strong></span>
             <span class="year-toggle"><i class="ph ph-caret-down" aria-hidden="true"></i></span>
           </div>
         </div>
@@ -2436,6 +3245,82 @@ function renderAccionesGroups() {
         </div>
       </div>`;
   }).join('');
+}
+
+// Posiciones abiertas: coste frente a valor de mercado. Pincha una fila para ver su evolución.
+function renderAccionesActualesGroup(rows) {
+  const id = 'yg-acc-Actuales';
+  const wasCollapsed = document.getElementById(id)?.classList.contains('collapsed');
+  let coste = 0, valor = 0, costeValorado = 0, completo = true;
+  const trs = rows.map(r => {
+    const q = quoteOf(r.ticker);
+    const pe = priceEur(r.ticker);
+    const v = pe != null && r.titulos ? r.titulos * pe : null;
+    coste += +r.total_compra || 0;
+    if (v != null) { valor += v; costeValorado += +r.total_compra || 0; } else completo = false;
+    const plus = v != null ? v - (+r.total_compra || 0) : null;
+    const priceCell = !r.ticker
+      ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openLinkModal('accion', ${jsArg(r.accion)})"><i class="ph ph-link-simple" aria-hidden="true"></i> Vincular</button>`
+      : q ? `${fmtMoney(q.price, q.currency)}${q.stale ? staleMark(q) : ''}`
+      : `<span class="text-muted" title="${esc(market.quotes[r.ticker]?.error || 'Cargando…')}">—</span>`;
+    return `
+      <tr class="${r.ticker ? 'is-clickable' : ''}" ${r.ticker ? `onclick="openPosicion('accion', ${jsArg(r.accion)})"` : ''}>
+        <td><div class="fw-700">${esc(r.accion)}</div>${r.ticker ? `<div class="cell-sub">${esc(r.ticker)}</div>` : ''}</td>
+        <td>${esc(r.fecha_compra) || '—'}</td>
+        <td class="text-right">${fmtN(r.titulos, 0)}</td>
+        <td class="text-right">${fmtN(r.precio_compra)}</td>
+        <td class="text-right">${fmtE(r.total_compra)}</td>
+        <td class="text-right">${priceCell}</td>
+        <td class="text-right">${v != null ? fmt(v) : '—'}</td>
+        <td class="text-right">${plusCell(plus, +r.total_compra)}</td>
+        <td>
+          <div class="td-actions" onclick="event.stopPropagation()">
+            <button class="btn btn-ghost btn-sm" onclick="openVentaAccionModal(${r.id})"><i class="ph ph-hand-coins" aria-hidden="true"></i> Vender</button>
+            <button class="btn btn-quiet btn-sm btn-icon" title="Editar" aria-label="Editar" onclick="openEditAccionModal(${r.id})"><i class="ph ph-pencil-simple" aria-hidden="true"></i></button>
+            <button class="btn btn-danger btn-sm btn-icon" title="Eliminar" aria-label="Eliminar" onclick="deleteAccion(${r.id})"><i class="ph ph-trash" aria-hidden="true"></i></button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+  const hasValue = valor > 0;
+  const note = market.error
+    ? `<div class="market-note is-error">No se pudieron actualizar los precios (${esc(market.error)}). Se muestra el último precio guardado.</div>`
+    : market.updatedAt ? `<div class="market-note">Precios de Yahoo Finance · ${market.updatedAt.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}. Pincha una posición para ver su evolución.</div>` : '';
+  return `
+    <div class="year-group ${wasCollapsed ? 'collapsed' : ''}" id="${id}">
+      <div class="year-header" onclick="toggleYearGroup(${jsArg(id)})">
+        <span class="year-label">Actuales</span>
+        <div class="year-summary">
+          <span>Invertido: <strong>${fmt(coste)}</strong></span>
+          ${hasValue ? `<span${completo ? '' : ' title="Solo las posiciones con precio"'}>Valor: <strong>${fmt(valor)}</strong>${completo ? '' : ' (parcial)'}</span>
+          <span class="${toneOf(valor - costeValorado)}">Plusvalía: <strong>${signedEur(valor - costeValorado)}</strong></span>` : ''}
+          <span class="is-open">${rows.length === 1 ? '1 posición abierta' : `${rows.length} posiciones abiertas`}</span>
+          <span class="year-toggle"><i class="ph ph-caret-down" aria-hidden="true"></i></span>
+        </div>
+      </div>
+      <div class="year-body">
+        <div>
+          ${note}
+          <div class="card">
+            <div class="table-wrap">
+              <table>
+                <thead><tr>
+                  <th>Acción</th><th>F.Compra</th>
+                  <th class="text-right">Títulos</th>
+                  <th class="text-right">P.Compra</th>
+                  <th class="text-right">Coste</th>
+                  <th class="text-right">P.Actual</th>
+                  <th class="text-right">Valor</th>
+                  <th class="text-right">Plusvalía</th>
+                  <th></th>
+                </tr></thead>
+                <tbody>${trs}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
 }
 
 function toggleYearGroup(id) {
@@ -2686,7 +3571,7 @@ function setCalcSpan(id, value, color) {
 
 // ── Accion CRUD ───────────────────────────────────────────────────────────
 let editAccionId = null;
-const accionFields = ['accion','fecha_compra','fecha_venta','titulos','precio_compra','comision_compra',
+const accionFields = ['accion','ticker','fecha_compra','fecha_venta','titulos','precio_compra','comision_compra',
   'precio_venta','comision_venta',
   'precio_dolar_compra','comision_divisa_c','precio_dolar_venta','comision_divisa_v'];
 
@@ -2712,6 +3597,7 @@ function openAccionModal() {
   editAccionId = null;
   document.getElementById('accionModalTitle').textContent = 'Añadir Operación';
   accionFields.forEach(f => { const el = document.getElementById(`fa-${f}`); if (el) el.value = ''; });
+  document.getElementById('faTickerResults').innerHTML = '';
   resetCalcSpans();
   document.getElementById('accionOverlay').classList.add('open');
 }
@@ -2720,6 +3606,7 @@ function openEditAccionModal(id) {
   editAccionId = id;
   document.getElementById('accionModalTitle').textContent = 'Editar Operación';
   accionFields.forEach(f => { const el = document.getElementById(`fa-${f}`); if (el) el.value = r[f] ?? ''; });
+  document.getElementById('faTickerResults').innerHTML = '';
   setCalcSpan('fa-total_compra', r.total_compra, 'var(--accent2)');
   setCalcSpan('fa-total_venta',  r.total_venta,  'var(--green)');
   setBeneficioSpan(r.beneficio);
@@ -2739,7 +3626,7 @@ async function saveAccion() {
   if (!res.ok) { toast('Error al guardar', 'error'); return; }
   toast(editAccionId ? 'Operación actualizada' : 'Operación añadida');
   closeAccionModal();
-  await loadOperaciones(); renderAccionesGroups();
+  await loadOperaciones(); renderAccionesGroups(); refreshMarketViews();
 }
 async function deleteAccion(id) {
   if (!confirm('¿Eliminar esta operación?')) return;
@@ -2833,37 +3720,56 @@ async function loadFondosCatalogo() {
 
 function renderFondoCatalogoList() {
   const el = document.getElementById('fondoCatalogoList');
+  const meta = document.getElementById('fondoCatalogoMeta');
   if (!fondosCatalogo.length) {
+    meta.textContent = '';
     el.innerHTML = `<div class="empty-state" style="text-align:left">
       Sin fondos registrados. Añade los fondos de tu cartera para poder seleccionarlos al registrar compras.
     </div>`;
     return;
   }
-  el.innerHTML = `<div class="table-wrap"><table>
-    <thead><tr>
-      <th>Fondo</th>
-      <th>ISIN</th>
-      <th class="text-right">Invertido</th>
-      <th></th>
-    </tr></thead>
-    <tbody>
-    ${fondosCatalogo.map(f => {
-      const pos = fondosPosiciones[f.nombre] || 0;
-      return `
-      <tr>
-        <td class="fw-700">${esc(f.nombre)}</td>
+  let totalValor = 0, totalCoste = 0, completo = true; // totalCoste: solo fondos con valor conocido
+  const rows = fondosCatalogo.map(f => {
+    const v = fundValuation(f);
+    const hasPos = v.coste > 0.01 || v.units > 1e-6;
+    if (hasPos) { if (v.valor != null) { totalValor += v.valor; totalCoste += v.coste; } else completo = false; }
+    const q = quoteOf(f.simbolo);
+    const valorCell = !f.simbolo
+      ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openLinkModal('fondo', ${f.id})"><i class="ph ph-link-simple" aria-hidden="true"></i> Vincular</button>`
+      : v.valor != null ? `${fmt(v.valor)}${q?.stale ? staleMark(q) : ''}`
+      : `<span class="text-muted" title="${esc(market.quotes[f.simbolo]?.error || (v.unknown ? 'Faltan participaciones en alguna operación' : 'Cargando…'))}">—</span>`;
+    const clickable = f.simbolo && hasPos;
+    return `
+      <tr class="${clickable ? 'is-clickable' : ''}" ${clickable ? `onclick="openPosicion('fondo', ${jsArg(f.nombre)})"` : ''}>
+        <td style="white-space:normal;max-width:280px"><div class="fw-700">${esc(f.nombre)}</div>${f.simbolo ? `<div class="cell-sub">${esc(f.simbolo)}</div>` : ''}</td>
         <td class="cell-sub" style="font-size:13px">${esc(f.isin) || '—'}</td>
-        <td class="text-right">${fmt(pos)}</td>
+        <td class="text-right" ${v.estimated ? 'title="Estimadas con el valor liquidativo de la fecha de cada operación"' : ''}>${hasPos && !v.unknown ? `${v.estimated ? '≈ ' : ''}${fmtN(v.units, 4)}` : '—'}</td>
+        <td class="text-right">${hasPos ? fmt(v.coste) : '—'}</td>
+        <td class="text-right">${hasPos ? valorCell : '—'}</td>
+        <td class="text-right">${hasPos ? plusCell(v.plus, v.coste) : '—'}</td>
         <td>
-          <div class="td-actions">
+          <div class="td-actions" onclick="event.stopPropagation()">
             <button class="btn btn-ghost btn-sm" data-traspaso-fondo="${f.id}"><i class="ph ph-arrows-left-right" aria-hidden="true"></i> Traspaso</button>
             <button class="btn btn-quiet btn-sm btn-icon" title="Editar" aria-label="Editar" onclick="openEditFondoCatalogoModal(${f.id})"><i class="ph ph-pencil-simple" aria-hidden="true"></i></button>
             <button class="btn btn-danger btn-sm btn-icon" title="Eliminar" aria-label="Eliminar" onclick="deleteFondoCatalogo(${f.id})"><i class="ph ph-trash" aria-hidden="true"></i></button>
           </div>
         </td>
       </tr>`;
-    }).join('')}
-    </tbody>
+  }).join('');
+  meta.innerHTML = totalCoste > 0 && totalValor > 0
+    ? `Valor <span class="num" style="color:var(--text)">${fmt(totalValor)}</span>&nbsp;&nbsp; Plusvalía ${plusCell(totalValor - totalCoste, totalCoste)}${completo ? '' : ' (parcial)'}`
+    : '';
+  el.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr>
+      <th>Fondo</th>
+      <th>ISIN</th>
+      <th class="text-right">Participaciones</th>
+      <th class="text-right">Coste</th>
+      <th class="text-right">Valor actual</th>
+      <th class="text-right">Plusvalía</th>
+      <th></th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
   </table></div>`;
   el.querySelectorAll('[data-traspaso-fondo]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -2929,6 +3835,7 @@ async function saveFondoCatalogo() {
   await loadFondosCatalogo();
   renderFondoCatalogoList();
   populateFondoSelect();
+  refreshMarketViews();
 }
 async function deleteFondoCatalogo(id) {
   if (!confirm('¿Eliminar este fondo del catálogo?')) return;
@@ -2997,6 +3904,8 @@ function openTraspasoModal(fondoNombre) {
   const disponible = fondosPosiciones[fondoNombre] || 0;
   document.getElementById('tr-origen').value = fondoNombre;
   document.getElementById('tr-importe').value = '';
+  document.getElementById('tr-part-origen').value = '';
+  document.getElementById('tr-part-destino').value = '';
   document.getElementById('tr-disponible').textContent = `Coste registrado en este fondo: ${fmt(disponible)} (puede ser menor que el valor de mercado si el fondo ha revalorizado)`;
   document.getElementById('tr-fecha').value = new Date().toISOString().slice(0,10);
   const sel = document.getElementById('tr-destino');
@@ -3018,14 +3927,16 @@ async function saveTraspaso() {
   if (!importe || importe <= 0) { toast('Importe inválido', 'error'); return; }
   const res = await fetch('/api/fondos-traspasos', {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ fondo_origen: traspasoOrigenFondo, fondo_destino: fondoDestino, importe, fecha }),
+    body: JSON.stringify({ fondo_origen: traspasoOrigenFondo, fondo_destino: fondoDestino, importe, fecha,
+      participaciones_origen: document.getElementById('tr-part-origen').value || null,
+      participaciones_destino: document.getElementById('tr-part-destino').value || null }),
   });
   const data = await res.json();
   if (!res.ok) { toast(data.error || 'Error al traspasar', 'error'); return; }
   toast('Traspaso registrado');
   closeTraspasoModal();
   await loadOperaciones();
-  renderFondoCatalogoList();
+  renderFondoCatalogoList(); refreshMarketViews();
   renderFondosChart();
   renderTraspasosList();
 }
@@ -3509,6 +4420,7 @@ const SECTION_LABELS = {
   snapshots:    'Snapshots',
   objetivo:     'Objetivo',
   estadisticas: 'Estadísticas',
+  rentabilidad: 'Rentabilidad',
   operaciones:  'Operaciones',
   backup:       'Copia de seguridad',
   gastos:       'Gastos',
