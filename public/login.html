@@ -4,91 +4,98 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mi Patrimonio — Acceso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      color-scheme: dark;
+      --bg: #0B0C0E; --surface: #131417; --raised: #1A1C20;
+      --line: rgba(255,255,255,.07); --line-2: rgba(255,255,255,.11);
+      --text: #ECEDEE; --text-2: #9A9DA5; --text-3: #6E727A;
+      --accent: #5B8CFF; --accent-hi: #7AA2FF; --loss: #F2555A;
+      --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #09090f;
-      color: #e8e8f0;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh; min-height: 100dvh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px;
+      -webkit-font-smoothing: antialiased;
     }
     .card {
-      background: #13131f;
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 16px;
-      padding: 40px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 32px;
       width: 100%;
-      max-width: 380px;
-      box-shadow: 0 24px 64px rgba(0,0,0,.5);
+      max-width: 360px;
+      animation: enter 420ms var(--ease-out) both;
     }
-    .logo {
-      text-align: center;
-      margin-bottom: 32px;
+    @keyframes enter { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+    .logo { margin-bottom: 28px; }
+    .logo-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--accent); color: #0B0C0E;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 700;
     }
-    .logo-icon { font-size: 36px; }
-    .logo-title {
-      font-size: 20px;
-      font-weight: 700;
-      color: #e8e8f0;
-      margin-top: 8px;
-    }
-    .logo-sub { font-size: 13px; color: #6b6b8a; margin-top: 4px; }
-    label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: #9999b0;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      margin-bottom: 6px;
-    }
+    .logo-title { font-size: 19px; font-weight: 600; letter-spacing: -.02em; margin-top: 18px; }
+    .logo-sub { font-size: 14px; color: var(--text-2); margin-top: 2px; }
+    label { display: block; font-size: 13px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; }
     input {
-      width: 100%;
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.1);
+      width: 100%; height: 40px;
+      background: var(--bg);
+      border: 1px solid var(--line-2);
       border-radius: 8px;
-      color: #e8e8f0;
-      font-size: 14px;
-      padding: 10px 14px;
+      color: var(--text);
+      font-family: inherit; font-size: 14px;
+      padding: 0 12px;
       outline: none;
-      transition: border-color .2s;
+      transition: border-color 140ms ease, box-shadow 140ms ease;
       margin-bottom: 16px;
     }
-    input:focus { border-color: #6366f1; }
+    input::placeholder { color: var(--text-3); }
+    input:hover:not(:focus) { border-color: rgba(255,255,255,.18); }
+    input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(91,140,255,.18); }
     button {
-      width: 100%;
-      background: #6366f1;
-      color: #fff;
+      width: 100%; height: 40px;
+      background: var(--accent);
+      color: #0B0C0E;
       border: none;
       border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      padding: 12px;
+      font-family: inherit; font-size: 14px; font-weight: 600;
       cursor: pointer;
       margin-top: 4px;
-      transition: background .2s;
+      transition: background-color 140ms ease, transform 140ms var(--ease-out), opacity 140ms ease;
     }
-    button:hover { background: #4f52d9; }
-    button:disabled { background: #3a3a5c; cursor: not-allowed; }
+    button:hover { background: var(--accent-hi); }
+    button:active:not(:disabled) { transform: scale(.97); }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     .error {
-      background: rgba(239,68,68,.12);
-      border: 1px solid rgba(239,68,68,.3);
+      background: rgba(242,85,90,.10);
       border-radius: 8px;
-      color: #f87171;
-      font-size: 13px;
-      padding: 10px 14px;
+      color: var(--loss);
+      font-size: 13.5px;
+      padding: 10px 12px;
       margin-top: 12px;
       display: none;
+      animation: enter 220ms var(--ease-out);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .card, .error { animation: none; }
+      button:active:not(:disabled) { transform: none; }
     }
   </style>
 </head>
 <body>
   <div class="card">
     <div class="logo">
-      <div class="logo-icon">◈</div>
+      <div class="logo-icon">M</div>
       <div class="logo-title">Mi Patrimonio</div>
       <div class="logo-sub">Accede con tu cuenta</div>
     </div>
@@ -98,7 +105,7 @@
       <label for="password">Contraseña</label>
       <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" required>
       <button type="submit" id="btn">Entrar</button>
-      <div class="error" id="error"></div>
+      <div class="error" id="error" role="alert"></div>
     </form>
   </div>
   <script>
